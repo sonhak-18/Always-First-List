@@ -9,9 +9,37 @@ Otomatisasi WhatsApp berbasis Node.js dan Baileys untuk mendeteksi pengumuman ku
 Sebelum memasang aplikasi, pastikan sistem telah memenuhi ketentuan berikut:
 
 1. **Node.js**: Versi 18.x atau lebih baru.
-2. **Sistem Operasi**: Windows 10/11 (diperlukan untuk runner VBS latar belakang dan autostart).
+2. **Sistem Operasi**:
+   - **Windows 10/11**: Didukung penuh untuk mode foreground (`npm start`), mode latar belakang (`npm run bg:start`), dan autostart Startup.
+   - **Linux / macOS**: Didukung untuk mode foreground (`npm start`) atau dapat dijalankan sebagai background service menggunakan process manager seperti `pm2`.
 3. **Akun WhatsApp Aktif**: Perangkat ponsel yang memiliki akses ke grup bimbingan dan grup target antrean.
 4. **Git**: Untuk mengunduh dan memperbarui repositori.
+
+---
+
+## Struktur Direktori Proyek
+
+```text
+wa-bimbingan-bot/
+├── public/
+│   └── index.html             # Antarmuka konsol web lokal
+├── scripts/
+│   └── autostart.js           # Pengelola service latar belakang & Windows Startup
+├── src/
+│   ├── config.js              # Manajemen konfigurasi dinamis (config.json)
+│   ├── dateHelper.js          # Kalkulasi tanggal sasaran & perakitan template teks
+│   ├── dictionary.js          # Manajemen kamus kata kunci (dictionary.json)
+│   ├── index.js               # Titik masuk utama & penanganan event Baileys
+│   ├── rules.js               # Mesin analisis pesan dosen & pencocokan aturan
+│   └── server.js              # Server HTTP Express & WebSocket loopback lokal
+├── .env.example               # Contoh konfigurasi kredensial dan target JID
+├── config.json                # Berkas setelan jadwal, template pesan, dan anggota
+├── dictionary.json            # Basis data aturan kata kunci pemicu & filter
+├── test-rules.js              # Skrip pengujian logika aturan secara luring
+├── package.json
+├── README.md                  # Panduan ringkas instalasi dan pengoperasian
+└── DOKUMENTASI.md             # Dokumentasi teknis, arsitektur, dan keamanan lengkap
+```
 
 ---
 

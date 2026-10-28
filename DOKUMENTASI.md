@@ -232,3 +232,32 @@ Fitur autostart memungkinkan bot aktif secara otomatis tanpa memunculkan jendela
 
 ### Kendala 4: Pengiriman Berulang Akibat Dosen Mengetik Berturut-turut
 - **Penyelesaian**: Bot menerapkan batas jeda waktu melalui variabel `COOLDOWN_MINUTES` (bawaan: 15 menit). Setelah mengirim antrean pertama, bot mengabaikan seluruh pesan dosen selama durasi jeda tersebut agar grup target tidak menerima pesan duplikat.
+
+---
+
+## 9. Opsi Penerapan di Linux / Server VPS (PM2)
+
+Bagi pengguna yang ingin menjalankan bot tanpa henti di server berbasis Linux (Ubuntu, Debian) tanpa harus membiarkan laptop tetap menyala:
+
+1. Pasang Process Manager (PM2):
+   ```bash
+   npm install -g pm2
+   ```
+2. Jalankan bot melalui PM2:
+   ```bash
+   pm2 start src/index.js --name "always-first-list"
+   ```
+3. Konfigurasikan autostart server:
+   ```bash
+   pm2 save
+   pm2 startup
+   ```
+4. Memantau jalannya bot:
+   ```bash
+   pm2 logs always-first-list
+   ```
+5. Untuk mengakses konsol web dengan aman tanpa membuka port ke internet publik, gunakan SSH port forwarding dari laptop:
+   ```bash
+   ssh -L 3000:127.0.0.1:3000 user@ip-server
+   ```
+   Lalu buka `http://localhost:3000` di peramban komputer lokal.
