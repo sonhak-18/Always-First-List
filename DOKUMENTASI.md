@@ -79,10 +79,28 @@ flowchart TD
 | `LISTING_MEMBERS` | Teks dipisah koma | Daftar nama mahasiswa yang ditempatkan pada slot antrean |
 | `COOLDOWN_MINUTES` | Angka bulat (menit) | Jeda waktu pengunci agar tidak mengirim pesan ganda jika dosen mengirim chat beruntun |
 | `PORT` | Angka | Port HTTP server untuk Konsol Web lokal (standar: `3000`) |
+| `HOST` | IP Address | Host interface listener (standar: `127.0.0.1` untuk isolasi loopback lokal) |
 
 ---
 
-## 4. Logika Siklus dan Fleksibilitas Jadwal
+## 4. Keamanan dan Isolasi Sistem
+
+Untuk menjamin keamanan data dan menjaga bot dari gangguan pihak luar:
+
+1. **Isolasi Interface Loopback (Localhost Only)**:
+   Server HTTP dan WebSocket dikunci secara default ke alamat `127.0.0.1`. Tindakan ini mencegah perangkat lain pada jaringan Wi-Fi/LAN publik atau kampus mengakses konsol web, riwayat chat, nomor telepon dosen, atau memindai kode QR WhatsApp Anda.
+2. **Proteksi Cross-Site WebSocket Hijacking (Anti-CSWSH)**:
+   Server menerapkan pengecekan header `Origin` pada tahap HTTP Upgrade sebelum koneksi WebSocket diterima (`verifyClient`). Permintaan koneksi WebSocket dari domain situs web lain yang dibuka di peramban otomatis ditolak dengan kode respon HTTP 403 Forbidden.
+3. **Pencegahan ReDoS dan Validasi Regex**:
+   Setiap kata kunci baru yang ditambahkan via konsol web divalidasi keabsahannya menggunakan fungsi `isValidRegex()`. Pada saat runtime, pemrosesan pesan dibungkus oleh `safeRegex()` sehingga kesalahan ekspresi reguler tidak menyebabkan proses Node.js mengalami crash atau hang.
+4. **Sanitasi Skema Konfigurasi**:
+   Semua pembaruan pengaturan melalui WebSocket melalui tahap validasi tipe data (`sanitizeConfig`) untuk mencegah injeksi nilai negatif atau polusi prototipe.
+5. **Pengecualian Kredensial di Git**:
+   Direktori kredensial Baileys (`auth_info_baileys/`), riwayat chat lokal (`logs_history.json`), dan berkas konfigurasi rahasia (`.env`) wajib selalu diabaikan oleh Git guna mencegah kebocoran sesi akun WhatsApp.
+
+---
+
+## 5. Logika Siklus dan Fleksibilitas Jadwal
 
 Aplikasi menyediakan dua metode kalkulasi target antrean yang dapat dipilih melalui Konsol Web pada berkas `config.json`:
 
@@ -111,7 +129,7 @@ Bot tidak dibatasi hanya pada 2 hari sepekan. Sistem mendukung konfigurasi hari 
 
 ---
 
-## 5. Konsol Web Lokal (http://localhost:3000)
+## 6. Konsol Web Lokal (http://localhost:3000)
 
 Konsol web dapat diakses melalui peramban web pada alamat `http://localhost:3000` selama bot berjalan (baik mode terminal maupun mode latar belakang).
 
@@ -120,17 +138,24 @@ Konsol web dapat diakses melalui peramban web pada alamat `http://localhost:3000
 2. **Aksi Cepat Kata Kunci**: Setiap baris chat yang masuk menyediakan tombol pintas:
    - `+ Whitelist`: Memasukkan teks pesan ke daftar pemicu bimbingan.
    - `+ Blacklist`: Memasukkan teks pesan ke daftar filter penolakan.
-3. **Active Dictionary**: Menampilkan dan mengedit daftar kata kunci aktif (`whitelist`, `blacklist`, `cancellation`, `redirect`). Setiap perubahan kata kunci langsung disimpan ke berkas `dictionary.json` dan aktif secara instan tanpa perlu restart aplikasi.
+3. **Active Dictionary**: Menampilkan dan mengedit daftar kata kunci aktif (`whitelist`, `blacklist`, `cancellation`, `redirect`). Setiap kata kunci baru otomatis divalidasi format regex-nya sebelum disimpan ke `dictionary.json`.
 4. **Jadwal & Format Pesan (Tab Pengaturan)**:
-   - Mengatur dua hari sesi bimbingan rutin (misal: Senin dan Rabu, atau Selasa dan Kamis).
-   - Menyesuaikan template pesan listing antrean secara dinamis menggunakan variabel `{date}`, `{day}`, `{members}`, dan `{members_raw}` dengan pratinjau pesan (*live preview*) instan.
+   - Memilih hari siklus bimbingan aktif (bisa 1 hari, 2 hari, atau lebih).
+   - Memilih mode sasaran listing (`subsequent` untuk sesi berikutnya atau `immediate` untuk sesi terdekat).
+   - Menyesuaikan template teks listing antrean dengan variabel:
+     - `{date}`: Tanggal bimbingan berformat bahasa Indonesia.
+     - `{day}`: Nama hari bimbingan.
+     - `{members}`: Daftar berurutan nama anggota (`1. Nama... \n 2. Nama...`).
+     - `{members_raw}`: Daftar nama dipisahkan koma.
+     - Tombol pintas `+ Enter (Baris Baru)` serta dukungan langsung tombol keyboard Enter.
+     - Sistem secara otomatis menormalkan penulisan kode baris baru literal (`\n` maupun `/n`) menjadi baris baru nyata.
    - Perubahan disimpan langsung ke `config.json` via WebSocket tanpa memerlukan restart bot.
 5. **Testing Sandbox**: Formulir pengujian kalimat dosen secara offline. Masukkan kalimat simulasi untuk memverifikasi apakah pesan tersebut memicu aksi, diblokir blacklist, atau mengalihkan tanggal antrean.
 6. **Pembersihan Log**: Tombol pembersih log untuk mengosongkan riwayat tampilan sekaligus mereset berkas penyimpanan `logs_history.json`.
 
 ---
 
-## 6. Mekanisme Latar Belakang dan Autostart Windows
+## 7. Mekanisme Latar Belakang dan Autostart Windows
 
 Fitur autostart memungkinkan bot aktif secara otomatis tanpa memunculkan jendela terminal hitam setiap kali komputer dinyalakan atau pengguna melakukan login Windows.
 
@@ -167,7 +192,7 @@ Fitur autostart memungkinkan bot aktif secara otomatis tanpa memunculkan jendela
 
 ---
 
-## 7. Penanganan Kendala Teknis
+## 8. Penanganan Kendala Teknis
 
 ### Kendala 1: Kode QR Tidak Muncul Setelah Akun Dikeluarkan dari Ponsel
 - **Penyebab**: Kredensial autentikasi lama di folder `auth_info_baileys` sudah tidak valid sehingga server WhatsApp menolak jabat tangan koneksi.

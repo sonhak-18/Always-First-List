@@ -12,20 +12,48 @@ const { generateListingText } = require('./dateHelper');
 const HISTORY_FILE = path.resolve(__dirname, '../logs_history.json');
 
 function releasePort(port) {
+  const num = parseInt(port, 10);
+  if (isNaN(num) || num < 1024 || num > 65535) {
+    return;
+  }
   try {
     if (process.platform === 'win32') {
-      const psCmd = `Get-NetTCPConnection -LocalPort ${port} -ErrorAction SilentlyContinue | Where-Object { $_.OwningProcess -ne ${process.pid} } | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }`;
+      const psCmd = `Get-NetTCPConnection -LocalPort ${num} -ErrorAction SilentlyContinue | Where-Object { $_.OwningProcess -ne ${process.pid} } | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }`;
       execSync(`powershell -NoProfile -Command "${psCmd}"`, { stdio: 'ignore' });
     }
   } catch (err) {}
 }
 
 class DashboardServer {
-  constructor(port = 3000) {
+  constructor(port = 3000, host = process.env.HOST || '127.0.0.1') {
     this.port = port;
+    this.host = host;
     this.app = express();
     this.server = http.createServer(this.app);
-    this.wss = new WebSocketServer({ server: this.server, path: '/ws' });
+    this.wss = new WebSocketServer({
+      server: this.server,
+      path: '/ws',
+      verifyClient: (info, callback) => {
+        const origin = info.origin || info.req.headers.origin;
+        if (origin) {
+          try {
+            const parsed = new URL(origin);
+            const allowedHosts = [
+              'localhost',
+              '127.0.0.1',
+              `localhost:${this.port}`,
+              `127.0.0.1:${this.port}`,
+            ];
+            if (!allowedHosts.includes(parsed.host) && !allowedHosts.includes(parsed.hostname)) {
+              return callback(false, 403, 'Forbidden origin');
+            }
+          } catch (err) {
+            return callback(false, 400, 'Invalid origin');
+          }
+        }
+        callback(true);
+      },
+    });
 
     this.state = {
       connected: false,
@@ -157,11 +185,21 @@ class DashboardServer {
       this.broadcast('config_updated', updated);
       this.addSystemLog('Pengaturan jadwal, format pesan, dan data anggota berhasil disimpan.', 'success');
     } else if (type === 'add_keyword') {
-      const updated = addKeyword(data.category, data.keyword);
-      this.broadcast('dictionary_updated', updated);
+      const validCategories = ['blacklist', 'cancellation', 'redirect', 'whitelist'];
+      if (data && validCategories.includes(data.category) && typeof data.keyword === 'string') {
+        const updated = addKeyword(data.category, data.keyword);
+        if (updated) {
+          this.broadcast('dictionary_updated', updated);
+        }
+      }
     } else if (type === 'remove_keyword') {
-      const updated = removeKeyword(data.category, data.keyword);
-      this.broadcast('dictionary_updated', updated);
+      const validCategories = ['blacklist', 'cancellation', 'redirect', 'whitelist'];
+      if (data && validCategories.includes(data.category) && typeof data.keyword === 'string') {
+        const updated = removeKeyword(data.category, data.keyword);
+        if (updated) {
+          this.broadcast('dictionary_updated', updated);
+        }
+      }
     } else if (type === 'clear_history') {
       this.recentChats = [];
       this.recentTriggers = [];
@@ -227,8 +265,8 @@ class DashboardServer {
           console.warn(`[PORT] Port ${this.port} sedang digunakan. Melepaskan port dan mencoba ulang...`);
           releasePort(this.port);
           setTimeout(() => {
-            this.server.listen(this.port, () => {
-              console.log(`[DASHBOARD] Always First List Console running on http://localhost:${this.port}`);
+            this.server.listen(this.port, this.host, () => {
+              console.log(`[DASHBOARD] Always First List Console running on http://${this.host}:${this.port}`);
               resolve();
             });
           }, 1000);
@@ -239,9 +277,9 @@ class DashboardServer {
 
       this.server.once('error', onError);
 
-      this.server.listen(this.port, () => {
+      this.server.listen(this.port, this.host, () => {
         this.server.removeListener('error', onError);
-        console.log(`[DASHBOARD] Always First List Console running on http://localhost:${this.port}`);
+        console.log(`[DASHBOARD] Always First List Console running on http://${this.host}:${this.port}`);
         resolve();
       });
     });

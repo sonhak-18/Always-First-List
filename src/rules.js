@@ -2,13 +2,23 @@ const { getDictionary } = require('./dictionary');
 
 const DAYS_LIST = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
 
+function safeRegex(patternStr, flags = 'i') {
+  if (!patternStr || typeof patternStr !== 'string') return null;
+  try {
+    return new RegExp(patternStr, flags);
+  } catch (err) {
+    return null;
+  }
+}
+
 function extractTargetDay(text) {
   const clean = text.toLowerCase();
   const dict = getDictionary();
 
   // Redirect patterns (e.g. "bisanya rabu", "ganti rabu") take precedence over normal day mentions
   for (const patternStr of dict.redirect || []) {
-    const regex = new RegExp(patternStr, 'i');
+    const regex = safeRegex(patternStr, 'i');
+    if (!regex) continue;
     const match = clean.match(regex);
     if (match && match[1]) {
       return match[1].toLowerCase();
@@ -55,7 +65,8 @@ function analyzeMessage(text) {
   const targetDay = extractTargetDay(cleanText);
 
   for (const patternStr of dict.redirect || []) {
-    const regex = new RegExp(patternStr, 'i');
+    const regex = safeRegex(patternStr, 'i');
+    if (!regex) continue;
     const match = cleanText.match(regex);
     if (match) {
       isRedirect = true;
@@ -76,7 +87,8 @@ function analyzeMessage(text) {
   // Blacklist check is skipped if the lecturer explicitly redirected to an alternative day
   if (!isRedirect) {
     for (const patternStr of dict.blacklist || []) {
-      const regex = new RegExp(patternStr, 'i');
+      const regex = safeRegex(patternStr, 'i');
+      if (!regex) continue;
       if (regex.test(cleanText)) {
         const match = cleanText.match(regex);
         return {
@@ -92,7 +104,8 @@ function analyzeMessage(text) {
   // Immediate session cancellation triggers listing for the subsequent cycle session
   let isSessionCancellation = false;
   for (const patternStr of dict.cancellation || []) {
-    const regex = new RegExp(patternStr, 'i');
+    const regex = safeRegex(patternStr, 'i');
+    if (!regex) continue;
     const match = cleanText.match(regex);
     if (match) {
       isSessionCancellation = true;
@@ -113,7 +126,8 @@ function analyzeMessage(text) {
 
   let matchedWhitelist = false;
   for (const patternStr of dict.whitelist || []) {
-    const regex = new RegExp(patternStr, 'i');
+    const regex = safeRegex(patternStr, 'i');
+    if (!regex) continue;
     const match = cleanText.match(regex);
     if (match) {
       matchedWhitelist = true;

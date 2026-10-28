@@ -76,13 +76,22 @@ function getDictionary() {
   return currentDictionary;
 }
 
+function isValidRegex(pattern) {
+  try {
+    new RegExp(pattern);
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
 function addKeyword(category, keyword) {
   const dict = getDictionary();
   if (!dict[category]) {
     dict[category] = [];
   }
-  const trimmed = keyword.trim();
-  if (trimmed && !dict[category].includes(trimmed)) {
+  const trimmed = typeof keyword === 'string' ? keyword.trim() : '';
+  if (trimmed && isValidRegex(trimmed) && !dict[category].includes(trimmed)) {
     dict[category].push(trimmed);
     saveDictionary(dict);
   }

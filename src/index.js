@@ -14,13 +14,14 @@ const SOURCE_GROUP_JID = process.env.SOURCE_GROUP_JID?.trim();
 const TARGET_GROUP_JID = process.env.TARGET_GROUP_JID?.trim();
 const COOLDOWN_MINUTES = parseInt(process.env.COOLDOWN_MINUTES || '15', 10);
 const PORT = parseInt(process.env.PORT || '3000', 10);
+const HOST = process.env.HOST || '127.0.0.1';
 const MEMBERS = (process.env.LISTING_MEMBERS || 'Nama 1, Nama 2, Nama 3')
   .split(',')
   .map(m => m.trim())
   .filter(Boolean);
 
 let lastTriggerTime = 0;
-const dashboard = new DashboardServer(PORT);
+const dashboard = new DashboardServer(PORT, HOST);
 const authPath = path.resolve(__dirname, '../auth_info_baileys');
 const groupParticipantMap = new Map();
 

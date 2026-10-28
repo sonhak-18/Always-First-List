@@ -42,9 +42,44 @@ function getConfig() {
   return currentConfig;
 }
 
+function sanitizeConfig(input) {
+  if (!input || typeof input !== 'object') return {};
+  const clean = {};
+  if (typeof input.messageTemplate === 'string') {
+    clean.messageTemplate = input.messageTemplate.slice(0, 4000);
+  }
+  if (Array.isArray(input.sessionDays)) {
+    const validDays = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
+    clean.sessionDays = input.sessionDays
+      .filter(d => typeof d === 'string')
+      .map(d => d.toLowerCase().trim())
+      .filter(d => validDays.includes(d));
+  }
+  if (input.targetMode === 'subsequent' || input.targetMode === 'immediate') {
+    clean.targetMode = input.targetMode;
+  }
+  if (Array.isArray(input.members)) {
+    clean.members = input.members
+      .filter(m => typeof m === 'string')
+      .map(m => m.trim())
+      .filter(Boolean)
+      .slice(0, 50);
+  }
+  if (
+    typeof input.cooldownMinutes === 'number' &&
+    Number.isInteger(input.cooldownMinutes) &&
+    input.cooldownMinutes >= 1 &&
+    input.cooldownMinutes <= 1440
+  ) {
+    clean.cooldownMinutes = input.cooldownMinutes;
+  }
+  return clean;
+}
+
 function updateConfig(partial) {
   const cfg = getConfig();
-  const updated = Object.assign({}, cfg, partial);
+  const sanitized = sanitizeConfig(partial);
+  const updated = Object.assign({}, cfg, sanitized);
   return saveConfig(updated);
 }
 

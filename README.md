@@ -1,6 +1,6 @@
 # Always First List
 
-Otomatisasi WhatsApp berbasis Node.js dan Baileys untuk mendeteksi pengumuman kuota bimbingan dosen pada grup sumber, lalu mengirimkan format antrean mahasiswa ke grup target secara instan. Dilengkapi antarmuka web lokal berbasis WebSocket untuk pemantauan langsung dan manajemen kamus kata kunci.
+Otomatisasi WhatsApp berbasis Node.js dan Baileys untuk mendeteksi pengumuman kuota bimbingan dosen pada grup sumber, lalu mengirimkan format antrean mahasiswa ke grup target secara instan. Dilengkapi antarmuka web lokal berbasis WebSocket untuk pemantauan langsung, pengaturan jadwal fleksibel, penyesuaian template pesan, dan manajemen kamus kata kunci.
 
 ---
 
@@ -50,8 +50,9 @@ LISTING_MEMBERS=Nama Mahasiswa 1, Nama Mahasiswa 2, Nama Mahasiswa 3
 # Cooldown anti-spam (menit)
 COOLDOWN_MINUTES=15
 
-# Port Konsol Web
+# Host dan Port Konsol Web Lokal (terikat ke 127.0.0.1 untuk keamanan)
 PORT=3000
+HOST=127.0.0.1
 ```
 
 ### 4. Tautkan Akun WhatsApp dan Ambil ID Grup
@@ -85,7 +86,7 @@ npm start
 Akses konsol pemantau di peramban web melalui `http://localhost:3000`.
 
 ### Mode 2: Latar Belakang Windows (Tanpa Jendela Terminal)
-Menjalankan bot sebagai proses background Windows secara tersembunyi tanpa jendela hitam yang mengganggu:
+Menjalankan bot sebagai proses background Windows secara tersembunyi tanpa jendela terminal:
 ```bash
 npm run bg:start    # Menjalankan proses latar belakang
 npm run bg:stop     # Menghentikan proses latar belakang
@@ -114,10 +115,29 @@ npm run autostart:off    # Hapus dari Startup dan matikan proses bot
 Saat bot berjalan, buka peramban di `http://localhost:3000` untuk memanfaatkan fitur konsol:
 
 - **Live Activity Stream**: Memantau pesan masuk dari grup bimbingan secara langsung dengan badge penanda dosen.
-- **Active Dictionary**: Menambah atau menghapus kata kunci trigger, blacklist, atau redirect secara dinamis tanpa restart.
-- **Jadwal & Format Pesan**: Mengubah hari siklus bimbingan rutin dan menyesuaikan template teks listing antrean dengan variabel `{date}`, `{day}`, `{members}`, dan `{members_raw}` langsung dari antarmuka web.
-- **Testing Sandbox**: Menguji kalimat chat dosen secara visual untuk memastikan format tanggal dan respon listing sesuai sasaran.
-- **Log Persistence**: Riwayat log tersimpan otomatis di disk lokal (`logs_history.json`).
+- **Active Dictionary**: Menambah atau menghapus kata kunci whitelist, blacklist, redirect, dan cancellation secara dinamis tanpa restart.
+- **Fleksibilitas Hari Siklus**: Memilih kombinasi hari bimbingan mingguan (misal Senin dan Rabu, atau Senin, Rabu, dan Jumat).
+- **Mode Sasaran Listing**:
+  - `subsequent`: Mendaftarkan antrean untuk sesi siklus berikutnya (Advance Listing).
+  - `immediate`: Mendaftarkan antrean langsung untuk sesi terdekat yang diumumkan dosen.
+- **Format Pesan Kustom**: Mengatur susunan teks listing pesan dengan variabel:
+  - `{date}`: Tanggal bimbingan dalam format Indonesia (contoh: `Senin, 02 November 2026`).
+  - `{day}`: Nama hari bimbingan (contoh: `Senin`).
+  - `{members}`: Daftar anggota berurutan dengan nomor baris (`1. Nama... \n 2. Nama...`).
+  - `{members_raw}`: Daftar nama anggota dipisahkan koma (`Nama 1, Nama 2`).
+  - Tombol pintas `+ Enter (Baris Baru)` untuk membuat baris baru langsung di template.
+- **Testing Sandbox**: Menguji kalimat chat dosen secara visual untuk memastikan deteksi filter, tanggal sasaran, dan hasil teks listing.
+- **Log Persistence**: Riwayat chat dan trigger tersimpan otomatis di disk lokal (`logs_history.json`).
+
+---
+
+## Aspek Keamanan Sistem
+
+1. **Isolasi Loopback Jaringan**: Server dashboard terikat khusus ke `127.0.0.1` (localhost), mencegah akses dari perangkat lain pada jaringan Wi-Fi/LAN yang sama.
+2. **Proteksi WebSocket (Anti-CSWSH)**: Menggunakan verifikasi handshake HTTP Upgrade untuk memblokir koneksi dari origin situs web eksternal yang tidak dikenal.
+3. **Penyaringan Regex**: Seluruh input kata kunci divalidasi keabsahan sintaks ekspresi regulernya sebelum disimpan untuk mencegah error fatal saat runtime.
+4. **Validasi Konfigurasi**: Input konfigurasi disaring menggunakan whitelist ketat guna mencegah injeksi properti liar.
+5. **Kerahasian Kredensial**: Sesi WhatsApp (`auth_info_baileys/`), berkas riwayat, dan `.env` otomatis diabaikan oleh Git.
 
 ---
 
