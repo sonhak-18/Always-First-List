@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Always First List - Console</title>
+  <style>
+    :root {
+      --bg: #090b10;
+      --surface: #0e121a;
+      --surface-elevated: #151b26;
+      --border: #1a2332;
+      --text-main: #d1d7e0;
+      --text-dim: #64748b;
+      --text-bright: #ffffff;
+      --green: #00e676;
+      --cyan: #00d2ff;
+      --amber: #ffab00;
+      --red: #ff5252;
+      --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.45;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .app-title {
+      color: var(--green);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.05em;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 11px;
+    }
+
+    .status-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border: 1px solid currentColor;
+      border-radius: 2px;
+    }
+
+    .status-tag.online { color: var(--green); background: rgba(0, 230, 118, 0.08); }
+    .status-tag.offline { color: var(--red); background: rgba(255, 82, 82, 0.08); }
+    .status-tag.qr { color: var(--amber); background: rgba(255, 171, 0, 0.08); }
+
+    .header-meta {
+      color: var(--text-dim);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 480px;
+      overflow: hidden;
+    }
+
+    @media (max-width: 960px) {
+      .workspace {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr 1fr;
+      }
+    }
+
+    .pane {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    .pane-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-dim);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .pane-header .title {
+      color: var(--cyan);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-header {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: inherit;
+      font-size: 10px;
+      padding: 2px 8px;
+      cursor: pointer;
+    }
+
+    .btn-header:hover {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    .pane-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Log cards */
+    .log-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 6px 10px;
+      border-left: 2px solid transparent;
+      background: rgba(255, 255, 255, 0.015);
+      border-radius: 0 2px 2px 0;
+    }
+
+    .log-item.dosen {
+      border-left-color: var(--green);
+      background: rgba(0, 230, 118, 0.035);
+    }
+
+    .log-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+    }
+
+    .sender-tag {
+      color: var(--cyan);
+      font-weight: 600;
+    }
+
+    .sender-tag.is-dosen {
+      color: var(--green);
+    }
+
+    .log-text {
+      color: var(--text-bright);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .quick-chips {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .chip-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: inherit;
+      font-size: 10px;
+      padding: 2px 6px;
+      cursor: pointer;
+    }
+
+    .chip-btn.wl:hover { border-color: var(--green); color: var(--green); }
+    .chip-btn.cn:hover { border-color: var(--amber); color: var(--amber); }
+    .chip-btn.bl:hover { border-color: var(--red); color: var(--red); }
+    .chip-btn.rd:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    .trigger-item {
+      border-left: 2px solid var(--amber);
+      background: rgba(255, 171, 0, 0.05);
+      padding: 6px 10px;
+      margin: 4px 0;
+    }
+
+    .system-log-item {
+      font-size: 11px;
+      padding: 5px 10px;
+      border-left: 2px solid var(--text-dim);
+      background: rgba(255, 255, 255, 0.015);
+      color: var(--text-main);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .system-log-item.info { border-left-color: var(--cyan); }
+    .system-log-item.info .sys-badge { color: var(--cyan); font-weight: 700; margin-right: 6px; }
+    .system-log-item.success { border-left-color: var(--green); }
+    .system-log-item.success .sys-badge { color: var(--green); font-weight: 700; margin-right: 6px; }
+    .system-log-item.warn { border-left-color: var(--amber); }
+    .system-log-item.warn .sys-badge { color: var(--amber); font-weight: 700; margin-right: 6px; }
+    .system-log-item.error { border-left-color: var(--red); }
+    .system-log-item.error .sys-badge { color: var(--red); font-weight: 700; margin-right: 6px; }
+
+    /* Sandbox box */
+    .sandbox-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sandbox-textarea {
+      background: #050608;
+      border: 1px solid var(--border);
+      color: var(--text-bright);
+      font-family: inherit;
+      font-size: 11px;
+      padding: 6px 8px;
+      outline: none;
+      resize: vertical;
+      min-height: 48px;
+    }
+
+    .sandbox-btn {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--green);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 12px;
+      cursor: pointer;
+      align-self: flex-start;
+    }
+
+    .sandbox-btn:hover {
+      background: var(--border);
+    }
+
+    .sandbox-output {
+      background: #050608;
+      border: 1px solid var(--border);
+      padding: 8px;
+      color: var(--text-main);
+      font-size: 11px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 50px;
+    }
+
+    /* Dictionary groups */
+    .dict-group {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .dict-title {
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-main);
+    }
+
+    .tag-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 2px;
+    }
+
+    .dict-tag {
+      background: #050608;
+      border: 1px solid var(--border);
+      font-size: 11px;
+      padding: 2px 7px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dict-tag.wl { border-color: rgba(0, 230, 118, 0.4); color: var(--green); }
+    .dict-tag.cn { border-color: rgba(255, 171, 0, 0.4); color: var(--amber); }
+    .dict-tag.bl { border-color: rgba(255, 82, 82, 0.4); color: var(--red); }
+    .dict-tag.rd { border-color: rgba(0, 210, 255, 0.4); color: var(--cyan); }
+
+    .tag-remove {
+      color: var(--text-dim);
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .tag-remove:hover { color: var(--red); }
+
+    .add-row {
+      display: flex;
+      gap: 5px;
+      margin-top: 4px;
+    }
+
+    .add-input {
+      flex: 1;
+      background: #050608;
+      border: 1px solid var(--border);
+      color: var(--text-bright);
+      font-family: inherit;
+      font-size: 11px;
+      padding: 4px 8px;
+      outline: none;
+    }
+
+    .add-btn {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-bright);
+      font-family: inherit;
+      font-size: 11px;
+      padding: 4px 10px;
+      cursor: pointer;
+    }
+
+    .add-btn:hover { background: var(--border); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <span class="app-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+        Always First List
+      </span>
+      <span style="color: var(--text-dim); font-size: 11px;">[Web Console]</span>
+    </div>
+    <div class="header-right">
+      <div id="statusTag" class="status-tag offline">
+        <span id="statusLabel">DISCONNECTED</span>
+      </div>
+      <span class="header-meta" id="dosenMeta">dosen: none</span>
+      <span class="header-meta" id="cooldownMeta">cooldown: 15m</span>
+    </div>
+  </header>
+
+  <div class="workspace">
+    
+    <!-- Left Pane: Live Log Stream (Persisted) -->
+    <div class="pane">
+      <div class="pane-header">
+        <span class="title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          Live & Saved Log Stream
+        </span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span id="logCount" style="color: var(--text-dim);">0 records</span>
+          <button class="btn-header" onclick="clearLogHistory()">Bersihkan Log</button>
+        </div>
+      </div>
+      <div id="logFeed" class="pane-content">
+        <div style="color: var(--text-dim); font-style: italic;">Memuat riwayat chat...</div>
+      </div>
+    </div>
+
+    <!-- Right Pane: Active Dictionary & Sandbox -->
+    <div class="pane" style="border-right: none;">
+      <div class="pane-header">
+        <span class="title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line></svg>
+          Active Dictionary & Sandbox
+        </span>
+        <span id="dictStats" style="color: var(--text-dim);">0 aturan aktif</span>
+      </div>
+      <div class="pane-content">
+        
+        <!-- Interactive Sandbox -->
+        <div class="sandbox-card">
+          <span style="font-weight: 600; font-size: 11px; color: var(--cyan);">Uji Pesan Dosen (Sandbox):</span>
+          <textarea id="sandboxInput" class="sandbox-textarea" placeholder="Ketik pesan dosen di sini (cth: Silahkan ya utk 6 mhs)..."></textarea>
+          <button class="sandbox-btn" onclick="runSandboxTest()">Uji Pesan Ini</button>
+          <div id="sandboxOutput" class="sandbox-output">Ketik pesan di atas lalu klik Uji Pesan Ini.</div>
+        </div>
+
+        <!-- Whitelist Section -->
+        <div class="dict-group">
+          <div class="dict-title">
+            <span style="color: var(--green);">KATA KUNCI BUKA BIMBINGAN (WHITELIST)</span>
+            <span id="wlCount" style="color: var(--text-dim);">0</span>
+          </div>
+          <div id="wlTags" class="tag-container"></div>
+          <form class="add-row" onsubmit="handleAddKeyword(event, 'whitelist', 'wlInput')">
+            <input type="text" id="wlInput" class="add-input" placeholder="Tambah kata / regex whitelist...">
+            <button type="submit" class="add-btn">+ Tambah</button>
+          </form>
+        </div>
+
+        <!-- Cancellation Section -->
+        <div class="dict-group">
+          <div class="dict-title">
+            <span style="color: var(--amber);">PEMBATALAN SESI TERDEKAT (BUKA SESI BERIKUTNYA)</span>
+            <span id="cnCount" style="color: var(--text-dim);">0</span>
+          </div>
+          <div id="cnTags" class="tag-container"></div>
+          <form class="add-row" onsubmit="handleAddKeyword(event, 'cancellation', 'cnInput')">
+            <input type="text" id="cnInput" class="add-input" placeholder="Tambah pola pembatalan sesi terdekat...">
+            <button type="submit" class="add-btn">+ Tambah</button>
+          </form>
+        </div>
+
+        <!-- Redirect Section -->
+        <div class="dict-group">
+          <div class="dict-title">
+            <span style="color: var(--cyan);">PENGALIHAN HARI (REDIRECT)</span>
+            <span id="rdCount" style="color: var(--text-dim);">0</span>
+          </div>
+          <div id="rdTags" class="tag-container"></div>
+          <form class="add-row" onsubmit="handleAddKeyword(event, 'redirect', 'rdInput')">
+            <input type="text" id="rdInput" class="add-input" placeholder="Tambah pola pengalihan hari...">
+            <button type="submit" class="add-btn">+ Tambah</button>
+          </form>
+        </div>
+
+        <!-- Blacklist Section -->
+        <div class="dict-group">
+          <div class="dict-title">
+            <span style="color: var(--red);">KATA KUNCI BATAL / LIBUR (BLACKLIST)</span>
+            <span id="blCount" style="color: var(--text-dim);">0</span>
+          </div>
+          <div id="blTags" class="tag-container"></div>
+          <form class="add-row" onsubmit="handleAddKeyword(event, 'blacklist', 'blInput')">
+            <input type="text" id="blInput" class="add-input" placeholder="Tambah kata penolakan...">
+            <button type="submit" class="add-btn">+ Tambah</button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let ws;
+    let currentDict = { whitelist: [], blacklist: [], redirect: [] };
+
+    async function loadInitialData() {
+      try {
+        const res = await fetch('/api/state');
+        if (res.ok) {
+          const payload = await res.json();
+          if (payload.dictionary) renderDictionary(payload.dictionary);
+          if (payload.state) applyState(payload.state);
+          renderAllLogs(payload);
+        }
+      } catch (err) {
+        console.error('Fetch error:', err);
+      }
+    }
+
+    function connectWs() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+      ws.onopen = () => {
+        appendSystemLog('Koneksi WebSocket terhubung.', 'info');
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          handleMessage(msg);
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      ws.onclose = () => {
+        updateStatus('offline', 'DISCONNECTED');
+        appendSystemLog('Koneksi WebSocket terputus. Mencoba reconnect...', 'warn');
+        setTimeout(connectWs, 3000);
+      };
+    }
+
+    function handleMessage(msg) {
+      const { type, data } = msg;
+
+      if (type === 'init') {
+        if (data.dictionary) renderDictionary(data.dictionary);
+        if (data.state) applyState(data.state);
+        renderAllLogs(data);
+      } else if (type === 'state_update') {
+        applyState(data);
+      } else if (type === 'dictionary_updated') {
+        renderDictionary(data);
+      } else if (type === 'new_chat') {
+        appendChatLog(data, true);
+      } else if (type === 'new_trigger') {
+        appendTriggerLog(data, true);
+      } else if (type === 'new_system_log') {
+        appendSystemLogItem(data, true);
+      } else if (type === 'test_result') {
+        displayTestResult(data);
+      } else if (type === 'history_cleared') {
+        document.getElementById('logFeed').innerHTML = '<div style="color: var(--text-dim); font-style: italic;">Riwayat log telah dibersihkan.</div>';
+        document.getElementById('logCount').textContent = '0 records';
+      }
+    }
+
+    function renderAllLogs(data) {
+      const feed = document.getElementById('logFeed');
+      feed.innerHTML = '';
+
+      const allItems = [];
+      (data.recentChats || []).forEach(c => allItems.push({ kind: 'chat', item: c, time: c.timestamp }));
+      (data.recentTriggers || []).forEach(t => allItems.push({ kind: 'trigger', item: t, time: t.timestamp }));
+      (data.recentSystemLogs || []).forEach(s => allItems.push({ kind: 'system', item: s, time: s.timestamp }));
+
+      allItems.sort((a, b) => b.time - a.time);
+
+      if (allItems.length === 0) {
+        feed.innerHTML = '<div style="color: var(--text-dim); font-style: italic;">Belum ada aktivitas tercatat.</div>';
+        document.getElementById('logCount').textContent = '0 records';
+        return;
+      }
+
+      allItems.forEach(entry => {
+        if (entry.kind === 'chat') appendChatLog(entry.item, false);
+        else if (entry.kind === 'trigger') appendTriggerLog(entry.item, false);
+        else if (entry.kind === 'system') appendSystemLogItem(entry.item, false);
+      });
+
+      updateRecordCount();
+    }
+
+    function updateRecordCount() {
+      const feed = document.getElementById('logFeed');
+      const count = feed.querySelectorAll('.log-item, .trigger-item, .system-log-item').length;
+      document.getElementById('logCount').textContent = `${count} records`;
+    }
+
+    function applyState(state) {
+      if (!state) return;
+      if (state.connected) {
+        updateStatus('online', 'CONNECTED');
+      } else if (state.qr) {
+        updateStatus('qr', 'SCAN_QR_REQUIRED');
+      } else {
+        updateStatus('offline', 'DISCONNECTED');
+      }
+
+      document.getElementById('dosenMeta').textContent = `dosen: ${state.dosenPhone || 'unset'}`;
+      document.getElementById('cooldownMeta').textContent = `cooldown: ${state.cooldownMinutes}m`;
+    }
+
+    function updateStatus(mode, label) {
+      const tag = document.getElementById('statusTag');
+      tag.className = `status-tag ${mode}`;
+      document.getElementById('statusLabel').textContent = label;
+    }
+
+    function appendSystemLog(text, level = 'info') {
+      appendSystemLogItem({ text, level, timestamp: Date.now() }, true);
+    }
+
+    function appendSystemLogItem(log, prepend = false) {
+      const feed = document.getElementById('logFeed');
+      const emptyNotice = feed.querySelector('div[style*="font-style: italic"]');
+      if (emptyNotice) emptyNotice.remove();
+
+      const item = document.createElement('div');
+      const level = log.level || 'info';
+      item.className = `system-log-item ${level}`;
+
+      const time = new Date(log.timestamp || Date.now()).toLocaleTimeString();
+      let badge = '[SYSTEM]';
+      if (level === 'success') badge = '[CONNECTED]';
+      else if (level === 'warn') badge = '[RECONNECTING]';
+      else if (level === 'error') badge = '[DISCONNECTED]';
+
+      item.innerHTML = `
+        <span><span class="sys-badge">${badge}</span> ${escapeHtml(log.text)}</span>
+        <span style="opacity: 0.6; font-size: 10px; margin-left: 8px;">${time}</span>
+      `;
+
+      if (prepend && feed.firstChild) {
+        feed.insertBefore(item, feed.firstChild);
+      } else {
+        feed.appendChild(item);
+      }
+      updateRecordCount();
+    }
+
+    function appendChatLog(chat, prepend = false) {
+      const feed = document.getElementById('logFeed');
+      const emptyNotice = feed.querySelector('div[style*="font-style: italic"]');
+      if (emptyNotice) emptyNotice.remove();
+
+      const item = document.createElement('div');
+      item.className = `log-item ${chat.isDosen ? 'dosen' : ''}`;
+
+      const time = new Date(chat.timestamp).toLocaleTimeString();
+      const senderHtml = chat.isDosen
+        ? `<span class="sender-tag is-dosen">[DOSEN] ${escapeHtml(chat.sender)}</span>`
+        : `<span class="sender-tag">[USER] ${escapeHtml(chat.sender)}</span>`;
+
+      item.innerHTML = `
+        <div class="log-meta">
+          ${senderHtml}
+          <span style="color: var(--text-dim);">${time}</span>
+        </div>
+        <div class="log-text">${escapeHtml(chat.text)}</div>
+        ${chat.isDosen ? `
+          <div class="quick-chips">
+            <button class="chip-btn wl" onclick="quickAdd('whitelist', '${escapeHtml(chat.text)}')">+ Whitelist</button>
+            <button class="chip-btn cn" onclick="quickAdd('cancellation', '${escapeHtml(chat.text)}')">+ Sesi Batal</button>
+            <button class="chip-btn bl" onclick="quickAdd('blacklist', '${escapeHtml(chat.text)}')">+ Blacklist</button>
+            <button class="chip-btn rd" onclick="quickAdd('redirect', '${escapeHtml(chat.text)}')">+ Redirect</button>
+          </div>
+        ` : ''}
+      `;
+
+      if (prepend && feed.firstChild) {
+        feed.insertBefore(item, feed.firstChild);
+      } else {
+        feed.appendChild(item);
+      }
+      updateRecordCount();
+    }
+
+    function appendTriggerLog(trigger, prepend = false) {
+      const feed = document.getElementById('logFeed');
+      const item = document.createElement('div');
+      item.className = 'trigger-item';
+
+      const time = new Date(trigger.timestamp).toLocaleTimeString();
+      item.innerHTML = `
+        <div style="color: var(--amber); font-weight: 700; display: flex; justify-content: space-between;">
+          <span>[TRIGGER] Listing Terkirim (${trigger.latency}ms)</span>
+          <span>${time}</span>
+        </div>
+        <div style="color: var(--text-bright); white-space: pre-wrap; margin-top: 3px;">${escapeHtml(trigger.listingMessage)}</div>
+      `;
+
+      if (prepend && feed.firstChild) {
+        feed.insertBefore(item, feed.firstChild);
+      } else {
+        feed.appendChild(item);
+      }
+      updateRecordCount();
+    }
+
+    function renderDictionary(dict) {
+      if (!dict) return;
+      currentDict = dict;
+
+      renderTagCategory('wlTags', 'wlCount', dict.whitelist || [], 'wl', 'whitelist');
+      renderTagCategory('cnTags', 'cnCount', dict.cancellation || [], 'cn', 'cancellation');
+      renderTagCategory('rdTags', 'rdCount', dict.redirect || [], 'rd', 'redirect');
+      renderTagCategory('blTags', 'blCount', dict.blacklist || [], 'bl', 'blacklist');
+
+      const total = (dict.whitelist?.length || 0) + (dict.cancellation?.length || 0) + (dict.redirect?.length || 0) + (dict.blacklist?.length || 0);
+      document.getElementById('dictStats').textContent = `${total} aturan aktif`;
+    }
+
+    function renderTagCategory(containerId, countId, items, styleCls, category) {
+      const container = document.getElementById(containerId);
+      const countEl = document.getElementById(countId);
+      if (!container || !countEl) return;
+
+      container.innerHTML = '';
+      countEl.textContent = items.length;
+
+      items.forEach(pattern => {
+        const tag = document.createElement('span');
+        tag.className = `dict-tag ${styleCls}`;
+        tag.innerHTML = `
+          <span>${escapeHtml(pattern)}</span>
+          <span class="tag-remove" onclick="deleteKeyword('${category}', '${escapeHtml(pattern)}')">&times;</span>
+        `;
+        container.appendChild(tag);
+      });
+    }
+
+    function handleAddKeyword(e, category, inputId) {
+      e.preventDefault();
+      const input = document.getElementById(inputId);
+      const val = input.value.trim();
+      if (!val) return;
+
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'add_keyword',
+          data: { category, keyword: val }
+        }));
+      }
+      input.value = '';
+    }
+
+    function deleteKeyword(category, keyword) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'remove_keyword',
+          data: { category, keyword }
+        }));
+      }
+    }
+
+    function quickAdd(category, text) {
+      const snippet = text.trim();
+      if (!snippet) return;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'add_keyword',
+          data: { category, keyword: snippet }
+        }));
+      }
+    }
+
+    function clearLogHistory() {
+      if (confirm('Yakin ingin menghapus seluruh riwayat log chat?')) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'clear_history' }));
+        }
+      }
+    }
+
+    function runSandboxTest() {
+      const textarea = document.getElementById('sandboxInput');
+      const val = textarea.value.trim();
+      if (!val) return;
+
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'test_chat',
+          data: { text: val }
+        }));
+      }
+    }
+
+    function displayTestResult(data) {
+      const box = document.getElementById('sandboxOutput');
+      const { analysis, preview, text } = data;
+      let out = `[UJI] "${text}"\n`;
+      out += `Status  : ${analysis.shouldTrigger ? '[MATCH] LOLOS (KIRIM LISTING)' : '[IGNORE] TIDAK MEMICU (DIABAIKAN)'}\n`;
+      out += `Alasan  : ${analysis.reason}\n`;
+      if (analysis.detectedKeywords?.length) out += `Keyword : ${analysis.detectedKeywords.join(', ')}\n`;
+      if (preview) out += `\n${preview}\n`;
+      box.textContent = out;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    loadInitialData();
+    connectWs();
+  </script>
+</body>
+</html>
