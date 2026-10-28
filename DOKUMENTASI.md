@@ -109,8 +109,12 @@ Konsol web dapat diakses melalui peramban web pada alamat `http://localhost:3000
    - `+ Whitelist`: Memasukkan teks pesan ke daftar pemicu bimbingan.
    - `+ Blacklist`: Memasukkan teks pesan ke daftar filter penolakan.
 3. **Active Dictionary**: Menampilkan dan mengedit daftar kata kunci aktif (`whitelist`, `blacklist`, `cancellation`, `redirect`). Setiap perubahan kata kunci langsung disimpan ke berkas `dictionary.json` dan aktif secara instan tanpa perlu restart aplikasi.
-4. **Testing Sandbox**: Formulir pengujian kalimat dosen secara offline. Masukkan kalimat simulasi untuk memverifikasi apakah pesan tersebut memicu aksi, diblokir blacklist, atau mengalihkan tanggal antrean.
-5. **Pembersihan Log**: Tombol pembersih log untuk mengosongkan riwayat tampilan sekaligus mereset berkas penyimpanan `logs_history.json`.
+4. **Jadwal & Format Pesan (Tab Pengaturan)**:
+   - Mengatur dua hari sesi bimbingan rutin (misal: Senin dan Rabu, atau Selasa dan Kamis).
+   - Menyesuaikan template pesan listing antrean secara dinamis menggunakan variabel `{date}`, `{day}`, `{members}`, dan `{members_raw}` dengan pratinjau pesan (*live preview*) instan.
+   - Perubahan disimpan langsung ke `config.json` via WebSocket tanpa memerlukan restart bot.
+5. **Testing Sandbox**: Formulir pengujian kalimat dosen secara offline. Masukkan kalimat simulasi untuk memverifikasi apakah pesan tersebut memicu aksi, diblokir blacklist, atau mengalihkan tanggal antrean.
+6. **Pembersihan Log**: Tombol pembersih log untuk mengosongkan riwayat tampilan sekaligus mereset berkas penyimpanan `logs_history.json`.
 
 ---
 

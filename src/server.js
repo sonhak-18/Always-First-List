@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const { execSync } = require('child_process');
 const { getDictionary, addKeyword, removeKeyword, saveDictionary } = require('./dictionary');
+const { getConfig, updateConfig } = require('./config');
 const { analyzeMessage } = require('./rules');
 const { generateListingText } = require('./dateHelper');
 
@@ -85,6 +86,7 @@ class DashboardServer {
       res.json({
         state: this.state,
         dictionary: getDictionary(),
+        config: getConfig(),
         recentChats: this.recentChats,
         recentTriggers: this.recentTriggers,
         recentSystemLogs: this.recentSystemLogs,
@@ -99,6 +101,7 @@ class DashboardServer {
         data: {
           state: this.state,
           dictionary: getDictionary(),
+          config: getConfig(),
           recentChats: this.recentChats,
           recentTriggers: this.recentTriggers,
           recentSystemLogs: this.recentSystemLogs,
@@ -120,9 +123,16 @@ class DashboardServer {
     if (type === 'test_chat') {
       const analysis = analyzeMessage(data.text);
       const members = this.state.members.length ? this.state.members : ['Nama 1', 'Nama 2', 'Nama 3'];
+      const config = getConfig();
       let preview = '';
       if (analysis.shouldTrigger) {
-        preview = generateListingText(analysis.targetDay, members);
+        preview = generateListingText(
+          analysis.targetDay,
+          members,
+          null,
+          config.messageTemplate,
+          config.sessionDays
+        );
       }
       ws.send(JSON.stringify({
         type: 'test_result',
@@ -132,6 +142,10 @@ class DashboardServer {
           preview,
         },
       }));
+    } else if (type === 'update_config') {
+      const updated = updateConfig(data);
+      this.broadcast('config_updated', updated);
+      this.addSystemLog('Pengaturan jadwal dan template pesan berhasil diperbarui.', 'success');
     } else if (type === 'add_keyword') {
       const updated = addKeyword(data.category, data.keyword);
       this.broadcast('dictionary_updated', updated);

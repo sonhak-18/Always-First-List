@@ -6,6 +6,7 @@ const qrcode = require('qrcode-terminal');
 const fs = require('fs');
 const { analyzeMessage } = require('./rules');
 const { generateListingText } = require('./dateHelper');
+const { getConfig } = require('./config');
 const DashboardServer = require('./server');
 
 const DOSEN_PHONE = (process.env.DOSEN_PHONE || '').replace(/[^0-9]/g, '');
@@ -216,7 +217,14 @@ async function startBot() {
           if (elapsedMinutes >= COOLDOWN_MINUTES) {
             const analysis = analyzeMessage(text);
             if (analysis.shouldTrigger) {
-              const listingMessage = generateListingText(analysis.targetDay, MEMBERS);
+              const botConfig = getConfig();
+              const listingMessage = generateListingText(
+                analysis.targetDay,
+                MEMBERS,
+                null,
+                botConfig.messageTemplate,
+                botConfig.sessionDays
+              );
               const targetJid = TARGET_GROUP_JID;
 
               if (targetJid && targetJid.includes('@g.us')) {

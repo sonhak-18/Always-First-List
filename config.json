@@ -1,0 +1,7 @@
+{
+  "messageTemplate": "List bimbingan {date}:\n{members}",
+  "sessionDays": [
+    "senin",
+    "rabu"
+  ]
+}

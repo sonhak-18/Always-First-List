@@ -115,6 +115,7 @@ Saat bot berjalan, buka peramban di `http://localhost:3000` untuk memanfaatkan f
 
 - **Live Activity Stream**: Memantau pesan masuk dari grup bimbingan secara langsung dengan badge penanda dosen.
 - **Active Dictionary**: Menambah atau menghapus kata kunci trigger, blacklist, atau redirect secara dinamis tanpa restart.
+- **Jadwal & Format Pesan**: Mengubah hari siklus bimbingan rutin dan menyesuaikan template teks listing antrean dengan variabel `{date}`, `{day}`, `{members}`, dan `{members_raw}` langsung dari antarmuka web.
 - **Testing Sandbox**: Menguji kalimat chat dosen secara visual untuk memastikan format tanggal dan respon listing sesuai sasaran.
 - **Log Persistence**: Riwayat log tersimpan otomatis di disk lokal (`logs_history.json`).
 

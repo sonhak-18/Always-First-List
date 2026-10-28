@@ -133,6 +133,33 @@
       gap: 6px;
     }
 
+    .tab-nav {
+      display: flex;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-dim);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      cursor: pointer;
+      border-radius: 2px;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-bright);
+    }
+
+    .tab-btn.active {
+      background: var(--surface-elevated);
+      border-color: var(--border);
+      color: var(--cyan);
+    }
+
     .btn-header {
       background: transparent;
       border: 1px solid var(--border);
@@ -152,6 +179,12 @@
       flex: 1;
       overflow-y: auto;
       padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tab-view {
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -369,6 +402,145 @@
     }
 
     .add-btn:hover { background: var(--border); }
+
+    /* Configuration cards */
+    .config-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border-radius: 2px;
+    }
+
+    .config-header {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cyan);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .config-desc {
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.45;
+    }
+
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .form-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .form-select {
+      background: #050608;
+      border: 1px solid var(--border);
+      color: var(--text-bright);
+      font-family: inherit;
+      font-size: 11px;
+      padding: 6px 8px;
+      outline: none;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+
+    .form-select:focus, .form-textarea:focus {
+      border-color: var(--cyan);
+    }
+
+    .form-textarea {
+      background: #050608;
+      border: 1px solid var(--border);
+      color: var(--text-bright);
+      font-family: inherit;
+      font-size: 11px;
+      padding: 8px;
+      outline: none;
+      resize: vertical;
+      min-height: 90px;
+      line-height: 1.5;
+      border-radius: 2px;
+    }
+
+    .token-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .token-btn {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--cyan);
+      font-family: inherit;
+      font-size: 10px;
+      padding: 2px 7px;
+      cursor: pointer;
+      border-radius: 2px;
+    }
+
+    .token-btn:hover {
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .preview-box {
+      background: #050608;
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--green);
+      padding: 8px 10px;
+      font-size: 11px;
+      color: var(--text-bright);
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.45;
+    }
+
+    .btn-save-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 2px;
+    }
+
+    .btn-primary {
+      background: var(--surface-elevated);
+      border: 1px solid var(--green);
+      color: var(--green);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 6px 14px;
+      cursor: pointer;
+      border-radius: 2px;
+    }
+
+    .btn-primary:hover {
+      background: rgba(0, 230, 118, 0.12);
+    }
+
+    .status-msg {
+      font-size: 11px;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -409,75 +581,143 @@
       </div>
     </div>
 
-    <!-- Right Pane: Active Dictionary & Sandbox -->
+    <!-- Right Pane: Active Dictionary, Sandbox & Settings -->
     <div class="pane" style="border-right: none;">
       <div class="pane-header">
-        <span class="title">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line></svg>
-          Active Dictionary & Sandbox
-        </span>
+        <div class="tab-nav">
+          <button id="tabBtnDict" class="tab-btn active" onclick="switchRightTab('dictionary')">[KAMUS &amp; ATURAN]</button>
+          <button id="tabBtnConfig" class="tab-btn" onclick="switchRightTab('config')">[JADWAL &amp; FORMAT PESAN]</button>
+        </div>
         <span id="dictStats" style="color: var(--text-dim);">0 aturan aktif</span>
       </div>
       <div class="pane-content">
         
-        <!-- Interactive Sandbox -->
-        <div class="sandbox-card">
-          <span style="font-weight: 600; font-size: 11px; color: var(--cyan);">Uji Pesan Dosen (Sandbox):</span>
-          <textarea id="sandboxInput" class="sandbox-textarea" placeholder="Ketik pesan dosen di sini (cth: Silahkan ya utk 6 mhs)..."></textarea>
-          <button class="sandbox-btn" onclick="runSandboxTest()">Uji Pesan Ini</button>
-          <div id="sandboxOutput" class="sandbox-output">Ketik pesan di atas lalu klik Uji Pesan Ini.</div>
+        <!-- View 1: Dictionary & Sandbox -->
+        <div id="viewDictionary" class="tab-view">
+          <!-- Interactive Sandbox -->
+          <div class="sandbox-card">
+            <span style="font-weight: 600; font-size: 11px; color: var(--cyan);">Uji Pesan Dosen (Sandbox):</span>
+            <textarea id="sandboxInput" class="sandbox-textarea" placeholder="Ketik pesan dosen di sini (cth: Silahkan ya utk 6 mhs)..."></textarea>
+            <button class="sandbox-btn" onclick="runSandboxTest()">Uji Pesan Ini</button>
+            <div id="sandboxOutput" class="sandbox-output">Ketik pesan di atas lalu klik Uji Pesan Ini.</div>
+          </div>
+
+          <!-- Whitelist Section -->
+          <div class="dict-group">
+            <div class="dict-title">
+              <span style="color: var(--green);">KATA KUNCI BUKA BIMBINGAN (WHITELIST)</span>
+              <span id="wlCount" style="color: var(--text-dim);">0</span>
+            </div>
+            <div id="wlTags" class="tag-container"></div>
+            <form class="add-row" onsubmit="handleAddKeyword(event, 'whitelist', 'wlInput')">
+              <input type="text" id="wlInput" class="add-input" placeholder="Tambah kata / regex whitelist...">
+              <button type="submit" class="add-btn">+ Tambah</button>
+            </form>
+          </div>
+
+          <!-- Cancellation Section -->
+          <div class="dict-group">
+            <div class="dict-title">
+              <span style="color: var(--amber);">PEMBATALAN SESI TERDEKAT (BUKA SESI BERIKUTNYA)</span>
+              <span id="cnCount" style="color: var(--text-dim);">0</span>
+            </div>
+            <div id="cnTags" class="tag-container"></div>
+            <form class="add-row" onsubmit="handleAddKeyword(event, 'cancellation', 'cnInput')">
+              <input type="text" id="cnInput" class="add-input" placeholder="Tambah pola pembatalan sesi terdekat...">
+              <button type="submit" class="add-btn">+ Tambah</button>
+            </form>
+          </div>
+
+          <!-- Redirect Section -->
+          <div class="dict-group">
+            <div class="dict-title">
+              <span style="color: var(--cyan);">PENGALIHAN HARI (REDIRECT)</span>
+              <span id="rdCount" style="color: var(--text-dim);">0</span>
+            </div>
+            <div id="rdTags" class="tag-container"></div>
+            <form class="add-row" onsubmit="handleAddKeyword(event, 'redirect', 'rdInput')">
+              <input type="text" id="rdInput" class="add-input" placeholder="Tambah pola pengalihan hari...">
+              <button type="submit" class="add-btn">+ Tambah</button>
+            </form>
+          </div>
+
+          <!-- Blacklist Section -->
+          <div class="dict-group">
+            <div class="dict-title">
+              <span style="color: var(--red);">KATA KUNCI BATAL / LIBUR (BLACKLIST)</span>
+              <span id="blCount" style="color: var(--text-dim);">0</span>
+            </div>
+            <div id="blTags" class="tag-container"></div>
+            <form class="add-row" onsubmit="handleAddKeyword(event, 'blacklist', 'blInput')">
+              <input type="text" id="blInput" class="add-input" placeholder="Tambah kata penolakan...">
+              <button type="submit" class="add-btn">+ Tambah</button>
+            </form>
+          </div>
         </div>
 
-        <!-- Whitelist Section -->
-        <div class="dict-group">
-          <div class="dict-title">
-            <span style="color: var(--green);">KATA KUNCI BUKA BIMBINGAN (WHITELIST)</span>
-            <span id="wlCount" style="color: var(--text-dim);">0</span>
+        <!-- View 2: Schedule & Message Template Settings -->
+        <div id="viewConfig" class="tab-view" style="display: none;">
+          <!-- Schedule Setup Card -->
+          <div class="config-card">
+            <div class="config-header">
+              <span>[JADWAL SIKLUS BIMBINGAN]</span>
+            </div>
+            <div class="config-desc">
+              Pilih dua hari sesi bimbingan rutin. Konfirmasi dosen pada/sebelum Sesi 1 otomatis membuka antrean Sesi 2. Konfirmasi pada Sesi 2 otomatis membuka Sesi 1 minggu berikutnya.
+            </div>
+            <div class="form-grid-2">
+              <div class="form-field">
+                <label class="form-label" for="sessionDay1">Sesi 1 (Hari Pertama):</label>
+                <select id="sessionDay1" class="form-select" onchange="handleConfigChange()">
+                  <option value="senin" selected>Senin</option>
+                  <option value="selasa">Selasa</option>
+                  <option value="rabu">Rabu</option>
+                  <option value="kamis">Kamis</option>
+                  <option value="jumat">Jumat</option>
+                  <option value="sabtu">Sabtu</option>
+                  <option value="minggu">Minggu</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="sessionDay2">Sesi 2 (Hari Kedua):</label>
+                <select id="sessionDay2" class="form-select" onchange="handleConfigChange()">
+                  <option value="senin">Senin</option>
+                  <option value="selasa">Selasa</option>
+                  <option value="rabu" selected>Rabu</option>
+                  <option value="kamis">Kamis</option>
+                  <option value="jumat">Jumat</option>
+                  <option value="sabtu">Sabtu</option>
+                  <option value="minggu">Minggu</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div id="wlTags" class="tag-container"></div>
-          <form class="add-row" onsubmit="handleAddKeyword(event, 'whitelist', 'wlInput')">
-            <input type="text" id="wlInput" class="add-input" placeholder="Tambah kata / regex whitelist...">
-            <button type="submit" class="add-btn">+ Tambah</button>
-          </form>
-        </div>
 
-        <!-- Cancellation Section -->
-        <div class="dict-group">
-          <div class="dict-title">
-            <span style="color: var(--amber);">PEMBATALAN SESI TERDEKAT (BUKA SESI BERIKUTNYA)</span>
-            <span id="cnCount" style="color: var(--text-dim);">0</span>
-          </div>
-          <div id="cnTags" class="tag-container"></div>
-          <form class="add-row" onsubmit="handleAddKeyword(event, 'cancellation', 'cnInput')">
-            <input type="text" id="cnInput" class="add-input" placeholder="Tambah pola pembatalan sesi terdekat...">
-            <button type="submit" class="add-btn">+ Tambah</button>
-          </form>
-        </div>
+          <!-- Template Setup Card -->
+          <div class="config-card">
+            <div class="config-header">
+              <span>[FORMAT PESAN LISTING ANTREAN]</span>
+            </div>
+            <div class="config-desc">
+              Atur format teks yang akan dikirim bot ke grup antrean. Klik tombol variabel untuk menyisipkan data dinamis:
+            </div>
+            <div class="token-bar">
+              <span style="color: var(--text-dim); font-size: 10px;">Sisipkan:</span>
+              <button type="button" class="token-btn" onclick="insertToken('{date}')">+ {date}</button>
+              <button type="button" class="token-btn" onclick="insertToken('{day}')">+ {day}</button>
+              <button type="button" class="token-btn" onclick="insertToken('{members}')">+ {members}</button>
+              <button type="button" class="token-btn" onclick="insertToken('{members_raw}')">+ {members_raw}</button>
+            </div>
+            <textarea id="templateInput" class="form-textarea" oninput="handleConfigChange()" placeholder="List bimbingan {date}:\n{members}"></textarea>
 
-        <!-- Redirect Section -->
-        <div class="dict-group">
-          <div class="dict-title">
-            <span style="color: var(--cyan);">PENGALIHAN HARI (REDIRECT)</span>
-            <span id="rdCount" style="color: var(--text-dim);">0</span>
-          </div>
-          <div id="rdTags" class="tag-container"></div>
-          <form class="add-row" onsubmit="handleAddKeyword(event, 'redirect', 'rdInput')">
-            <input type="text" id="rdInput" class="add-input" placeholder="Tambah pola pengalihan hari...">
-            <button type="submit" class="add-btn">+ Tambah</button>
-          </form>
-        </div>
+            <div class="form-label" style="margin-top: 4px;">Pratinjau Hasil Pesan:</div>
+            <div id="templatePreview" class="preview-box"></div>
 
-        <!-- Blacklist Section -->
-        <div class="dict-group">
-          <div class="dict-title">
-            <span style="color: var(--red);">KATA KUNCI BATAL / LIBUR (BLACKLIST)</span>
-            <span id="blCount" style="color: var(--text-dim);">0</span>
+            <div class="btn-save-row">
+              <button type="button" class="btn-primary" onclick="saveConfigToServer()">Simpan Pengaturan</button>
+              <span id="saveStatus" class="status-msg"></span>
+            </div>
           </div>
-          <div id="blTags" class="tag-container"></div>
-          <form class="add-row" onsubmit="handleAddKeyword(event, 'blacklist', 'blInput')">
-            <input type="text" id="blInput" class="add-input" placeholder="Tambah kata penolakan...">
-            <button type="submit" class="add-btn">+ Tambah</button>
-          </form>
         </div>
 
       </div>
@@ -487,7 +727,12 @@
 
   <script>
     let ws;
-    let currentDict = { whitelist: [], blacklist: [], redirect: [] };
+    let currentDict = { whitelist: [], blacklist: [], redirect: [], cancellation: [] };
+    let currentConfig = {
+      messageTemplate: 'List bimbingan {date}:\n{members}',
+      sessionDays: ['senin', 'rabu']
+    };
+    let currentMembers = ['Nama 1', 'Nama 2', 'Nama 3'];
 
     async function loadInitialData() {
       try {
@@ -495,8 +740,15 @@
         if (res.ok) {
           const payload = await res.json();
           if (payload.dictionary) renderDictionary(payload.dictionary);
-          if (payload.state) applyState(payload.state);
+          if (payload.config) applyConfig(payload.config);
+          if (payload.state) {
+            applyState(payload.state);
+            if (payload.state.members && payload.state.members.length) {
+              currentMembers = payload.state.members;
+            }
+          }
           renderAllLogs(payload);
+          updateTemplatePreview();
         }
       } catch (err) {
         console.error('Fetch error:', err);
@@ -532,12 +784,25 @@
 
       if (type === 'init') {
         if (data.dictionary) renderDictionary(data.dictionary);
-        if (data.state) applyState(data.state);
+        if (data.config) applyConfig(data.config);
+        if (data.state) {
+          applyState(data.state);
+          if (data.state.members && data.state.members.length) {
+            currentMembers = data.state.members;
+          }
+        }
         renderAllLogs(data);
+        updateTemplatePreview();
       } else if (type === 'state_update') {
         applyState(data);
+        if (data.members && data.members.length) {
+          currentMembers = data.members;
+          updateTemplatePreview();
+        }
       } else if (type === 'dictionary_updated') {
         renderDictionary(data);
+      } else if (type === 'config_updated') {
+        applyConfig(data);
       } else if (type === 'new_chat') {
         appendChatLog(data, true);
       } else if (type === 'new_trigger') {
@@ -549,6 +814,158 @@
       } else if (type === 'history_cleared') {
         document.getElementById('logFeed').innerHTML = '<div style="color: var(--text-dim); font-style: italic;">Riwayat log telah dibersihkan.</div>';
         document.getElementById('logCount').textContent = '0 records';
+      }
+    }
+
+    function switchRightTab(tab) {
+      const btnDict = document.getElementById('tabBtnDict');
+      const btnConfig = document.getElementById('tabBtnConfig');
+      const viewDict = document.getElementById('viewDictionary');
+      const viewConfig = document.getElementById('viewConfig');
+
+      if (tab === 'dictionary') {
+        btnDict.classList.add('active');
+        btnConfig.classList.remove('active');
+        viewDict.style.display = 'flex';
+        viewConfig.style.display = 'none';
+      } else {
+        btnConfig.classList.add('active');
+        btnDict.classList.remove('active');
+        viewDict.style.display = 'none';
+        viewConfig.style.display = 'flex';
+        updateTemplatePreview();
+      }
+    }
+
+    function applyConfig(cfg) {
+      if (!cfg) return;
+      currentConfig = cfg;
+      if (cfg.sessionDays && cfg.sessionDays.length >= 2) {
+        const s1 = document.getElementById('sessionDay1');
+        const s2 = document.getElementById('sessionDay2');
+        if (s1) s1.value = cfg.sessionDays[0];
+        if (s2) s2.value = cfg.sessionDays[1];
+      }
+      if (cfg.messageTemplate !== undefined) {
+        const tplInput = document.getElementById('templateInput');
+        if (tplInput) tplInput.value = cfg.messageTemplate;
+      }
+      updateTemplatePreview();
+    }
+
+    function insertToken(token) {
+      const textarea = document.getElementById('templateInput');
+      const start = textarea.selectionStart || 0;
+      const end = textarea.selectionEnd || 0;
+      const text = textarea.value;
+      textarea.value = text.substring(0, start) + token + text.substring(end);
+      textarea.focus();
+      textarea.selectionStart = textarea.selectionEnd = start + token.length;
+      handleConfigChange();
+    }
+
+    function handleConfigChange() {
+      updateTemplatePreview();
+      const statusEl = document.getElementById('saveStatus');
+      statusEl.textContent = '* Perubahan belum disimpan';
+      statusEl.style.color = 'var(--amber)';
+    }
+
+    function calculatePreviewTargetDate(sessionDays) {
+      const dayMap = { minggu: 0, senin: 1, selasa: 2, rabu: 3, kamis: 4, jumat: 5, sabtu: 6 };
+      const now = new Date();
+      const currentDay = now.getDay();
+      const d1 = dayMap[sessionDays[0]] !== undefined ? dayMap[sessionDays[0]] : 1;
+      const d2 = dayMap[sessionDays[1]] !== undefined ? dayMap[sessionDays[1]] : 3;
+      const days = [d1, d2].sort((a, b) => a - b);
+      let targetDayIdx = days[0];
+      let addDays = 0;
+
+      if (currentDay <= days[0]) {
+        targetDayIdx = days[1];
+        addDays = targetDayIdx - currentDay;
+        if (addDays <= 0) addDays += 7;
+      } else if (currentDay <= days[1]) {
+        targetDayIdx = days[0];
+        addDays = (targetDayIdx - currentDay) + 7;
+      } else {
+        targetDayIdx = days[0];
+        addDays = (targetDayIdx - currentDay) + 7;
+      }
+
+      const targetDate = new Date(now.getTime() + addDays * 24 * 60 * 60 * 1000);
+      const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+      const dayStr = dayNames[targetDate.getDay()];
+      const dateNum = String(targetDate.getDate()).padStart(2, '0');
+      const monthStr = monthNames[targetDate.getMonth()];
+      const year = targetDate.getFullYear();
+
+      return {
+        day: dayStr,
+        fullDate: `${dayStr}, ${dateNum} ${monthStr} ${year}`
+      };
+    }
+
+    function updateTemplatePreview() {
+      const day1El = document.getElementById('sessionDay1');
+      const day2El = document.getElementById('sessionDay2');
+      const tplEl = document.getElementById('templateInput');
+      const previewEl = document.getElementById('templatePreview');
+
+      if (!day1El || !day2El || !tplEl || !previewEl) return;
+
+      const day1 = day1El.value;
+      const day2 = day2El.value;
+      const template = tplEl.value || 'List bimbingan {date}:\n{members}';
+
+      const previewDate = calculatePreviewTargetDate([day1, day2]);
+      const membersFormatted = currentMembers.map((m, i) => `${i + 1}. ${m}`).join('\n');
+      const membersRaw = currentMembers.join(', ');
+
+      const rendered = template
+        .replace(/{date}/g, previewDate.fullDate)
+        .replace(/{day}/g, previewDate.day)
+        .replace(/{members}/g, membersFormatted)
+        .replace(/{members_raw}/g, membersRaw);
+
+      previewEl.textContent = rendered;
+    }
+
+    function saveConfigToServer() {
+      const day1 = document.getElementById('sessionDay1').value;
+      const day2 = document.getElementById('sessionDay2').value;
+      const template = document.getElementById('templateInput').value.trim();
+
+      if (!template) {
+        alert('Template pesan tidak boleh kosong.');
+        return;
+      }
+
+      if (day1 === day2) {
+        alert('Sesi 1 dan Sesi 2 tidak boleh memilih hari yang sama.');
+        return;
+      }
+
+      const payload = {
+        sessionDays: [day1, day2],
+        messageTemplate: template
+      };
+
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'update_config',
+          data: payload
+        }));
+        const statusEl = document.getElementById('saveStatus');
+        statusEl.textContent = '[BERHASIL DISIMPAN]';
+        statusEl.style.color = 'var(--green)';
+        setTimeout(() => {
+          if (statusEl.textContent === '[BERHASIL DISIMPAN]') statusEl.textContent = '';
+        }, 3000);
+      } else {
+        alert('Koneksi WebSocket terputus. Tidak dapat menyimpan.');
       }
     }
 
