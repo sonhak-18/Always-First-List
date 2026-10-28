@@ -144,7 +144,12 @@ function generateListingText(
   const rawMembers = members.join(', ');
 
   const defaultTemplate = 'List bimbingan {date}:\n{members}';
-  const effectiveTemplate = (template && template.trim()) ? template : defaultTemplate;
+  let effectiveTemplate = (template && template.trim()) ? template : defaultTemplate;
+
+  // Convert literal escape sequences (\n or accidental /n) into real newlines
+  effectiveTemplate = effectiveTemplate
+    .replace(/\\n/g, '\n')
+    .replace(/\/n/gi, '\n');
 
   return effectiveTemplate
     .replace(/{date}/g, formattedDate)

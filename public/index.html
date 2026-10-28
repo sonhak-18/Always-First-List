@@ -800,7 +800,7 @@
               <span>[4. FORMAT PESAN LISTING ANTREAN]</span>
             </div>
             <div class="config-desc">
-              Atur format teks yang akan dikirim bot ke grup antrean. Klik tombol variabel untuk menyisipkan data dinamis:
+              Atur format teks yang akan dikirim bot ke grup antrean. Tekan Enter untuk baris baru, atau klik tombol variabel:
             </div>
             <div class="token-bar">
               <span style="color: var(--text-dim); font-size: 10px;">Sisipkan:</span>
@@ -808,8 +808,9 @@
               <button type="button" class="token-btn" onclick="insertToken('{day}')">+ {day}</button>
               <button type="button" class="token-btn" onclick="insertToken('{members}')">+ {members}</button>
               <button type="button" class="token-btn" onclick="insertToken('{members_raw}')">+ {members_raw}</button>
+              <button type="button" class="token-btn" onclick="insertToken('\n')">+ Enter (Baris Baru)</button>
             </div>
-            <textarea id="templateInput" class="form-textarea" oninput="handleConfigChange()" placeholder="List bimbingan {date}:\n{members}"></textarea>
+            <textarea id="templateInput" class="form-textarea" oninput="handleConfigChange()" placeholder="List bimbingan {date}:&#10;{members}"></textarea>
 
             <div class="form-label" style="margin-top: 4px;">Pratinjau Hasil Pesan:</div>
             <div id="templatePreview" class="preview-box"></div>
@@ -1123,7 +1124,10 @@
 
       if (!tplEl || !previewEl) return;
 
-      const template = tplEl.value || 'List bimbingan {date}:\n{members}';
+      let template = tplEl.value ? tplEl.value : 'List bimbingan {date}:\n{members}';
+      // Auto-normalisasi escape sequence literal (\n atau /n) menjadi baris baru nyata
+      template = template.replace(/\\n/g, '\n').replace(/\/n/gi, '\n');
+
       const previewDate = calculatePreviewTargetDate(selectedDays, targetMode);
       const membersFormatted = currentMembers.map((m, i) => `${i + 1}. ${m}`).join('\n');
       const membersRaw = currentMembers.join(', ');
@@ -1140,7 +1144,8 @@
     function saveConfigToServer() {
       const modeRadio = document.querySelector('input[name="targetModeRadio"]:checked');
       const targetMode = modeRadio ? modeRadio.value : 'subsequent';
-      const template = document.getElementById('templateInput').value.trim();
+      const rawTemplate = document.getElementById('templateInput').value.trim();
+      const template = rawTemplate.replace(/\\n/g, '\n').replace(/\/n/gi, '\n');
       const membersRaw = document.getElementById('membersInput').value.trim();
       const cooldownVal = parseInt(document.getElementById('cooldownInput').value, 10);
 
