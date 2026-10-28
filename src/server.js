@@ -122,8 +122,10 @@ class DashboardServer {
 
     if (type === 'test_chat') {
       const analysis = analyzeMessage(data.text);
-      const members = this.state.members.length ? this.state.members : ['Nama 1', 'Nama 2', 'Nama 3'];
       const config = getConfig();
+      const members = (Array.isArray(config.members) && config.members.length > 0)
+        ? config.members
+        : (this.state.members.length ? this.state.members : ['Nama 1', 'Nama 2', 'Nama 3']);
       let preview = '';
       if (analysis.shouldTrigger) {
         preview = generateListingText(
@@ -132,7 +134,8 @@ class DashboardServer {
           null,
           config.messageTemplate,
           config.sessionDays,
-          config.targetMode
+          config.targetMode,
+          analysis.isCancellation
         );
       }
       ws.send(JSON.stringify({
@@ -145,8 +148,14 @@ class DashboardServer {
       }));
     } else if (type === 'update_config') {
       const updated = updateConfig(data);
+      if (Array.isArray(updated.members) && updated.members.length > 0) {
+        this.updateState({ members: updated.members });
+      }
+      if (typeof updated.cooldownMinutes === 'number' && updated.cooldownMinutes > 0) {
+        this.updateState({ cooldownMinutes: updated.cooldownMinutes });
+      }
       this.broadcast('config_updated', updated);
-      this.addSystemLog('Pengaturan jadwal dan template pesan berhasil diperbarui.', 'success');
+      this.addSystemLog('Pengaturan jadwal, format pesan, dan data anggota berhasil disimpan.', 'success');
     } else if (type === 'add_keyword') {
       const updated = addKeyword(data.category, data.keyword);
       this.broadcast('dictionary_updated', updated);

@@ -4,5 +4,11 @@
     "senin",
     "rabu"
   ],
-  "targetMode": "subsequent"
+  "targetMode": "subsequent",
+  "members": [
+    "Nama 1",
+    "Nama 2",
+    "Nama 3"
+  ],
+  "cooldownMinutes": 15
 }

@@ -7,6 +7,8 @@ const DEFAULT_CONFIG = {
   messageTemplate: 'List bimbingan {date}:\n{members}',
   sessionDays: ['senin', 'rabu'],
   targetMode: 'subsequent',
+  members: [],
+  cooldownMinutes: 15,
 };
 
 let currentConfig = null;

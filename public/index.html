@@ -508,12 +508,33 @@
       font-weight: 700;
     }
 
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
     .form-label {
       font-size: 10px;
       font-weight: 600;
       color: var(--text-dim);
       text-transform: uppercase;
       letter-spacing: 0.05em;
+    }
+
+    .form-input {
+      background: #050608;
+      border: 1px solid var(--border);
+      color: var(--text-bright);
+      font-family: inherit;
+      font-size: 11px;
+      padding: 6px 8px;
+      outline: none;
+      border-radius: 2px;
+    }
+
+    .form-input:focus, .form-textarea:focus {
+      border-color: var(--cyan);
     }
 
     .form-textarea {
@@ -528,10 +549,6 @@
       min-height: 85px;
       line-height: 1.5;
       border-radius: 2px;
-    }
-
-    .form-textarea:focus {
-      border-color: var(--cyan);
     }
 
     .token-bar {
@@ -573,7 +590,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-top: 2px;
+      margin-top: 4px;
     }
 
     .btn-primary {
@@ -759,10 +776,28 @@
             </div>
           </div>
 
+          <!-- Members & Cooldown Card -->
+          <div class="config-card">
+            <div class="config-header">
+              <span>[3. DATA ANGGOTA TIM &amp; JEDA ANTISPAM]</span>
+            </div>
+            <div class="config-desc">
+              Atur urutan nama anggota tim yang didaftarkan ke slot kuota dan batas jeda antar chat:
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="membersInput">Daftar Anggota Tim (dipisahkan koma):</label>
+              <input type="text" id="membersInput" class="form-input" oninput="handleMembersChange()" placeholder="Nama 1, Nama 2, Nama 3">
+            </div>
+            <div class="form-field" style="margin-top: 4px;">
+              <label class="form-label" for="cooldownInput">Jeda Waktu Antispam (Menit):</label>
+              <input type="number" id="cooldownInput" min="1" max="180" class="form-input" oninput="handleConfigChange()" placeholder="15" style="max-width: 140px;">
+            </div>
+          </div>
+
           <!-- Template Setup Card -->
           <div class="config-card">
             <div class="config-header">
-              <span>[3. FORMAT PESAN LISTING ANTREAN]</span>
+              <span>[4. FORMAT PESAN LISTING ANTREAN]</span>
             </div>
             <div class="config-desc">
               Atur format teks yang akan dikirim bot ke grup antrean. Klik tombol variabel untuk menyisipkan data dinamis:
@@ -798,7 +833,9 @@
     let currentConfig = {
       messageTemplate: 'List bimbingan {date}:\n{members}',
       sessionDays: ['senin', 'rabu'],
-      targetMode: 'subsequent'
+      targetMode: 'subsequent',
+      members: [],
+      cooldownMinutes: 15
     };
     let selectedDays = ['senin', 'rabu'];
     let currentMembers = ['Nama 1', 'Nama 2', 'Nama 3'];
@@ -809,13 +846,13 @@
         if (res.ok) {
           const payload = await res.json();
           if (payload.dictionary) renderDictionary(payload.dictionary);
-          if (payload.config) applyConfig(payload.config);
           if (payload.state) {
             applyState(payload.state);
             if (payload.state.members && payload.state.members.length) {
               currentMembers = payload.state.members;
             }
           }
+          if (payload.config) applyConfig(payload.config);
           renderAllLogs(payload);
           updateTemplatePreview();
         }
@@ -853,19 +890,21 @@
 
       if (type === 'init') {
         if (data.dictionary) renderDictionary(data.dictionary);
-        if (data.config) applyConfig(data.config);
         if (data.state) {
           applyState(data.state);
           if (data.state.members && data.state.members.length) {
             currentMembers = data.state.members;
           }
         }
+        if (data.config) applyConfig(data.config);
         renderAllLogs(data);
         updateTemplatePreview();
       } else if (type === 'state_update') {
         applyState(data);
         if (data.members && data.members.length) {
           currentMembers = data.members;
+          const mInput = document.getElementById('membersInput');
+          if (mInput && !mInput.value) mInput.value = data.members.join(', ');
           updateTemplatePreview();
         }
       } else if (type === 'dictionary_updated') {
@@ -958,7 +997,29 @@
         const tplInput = document.getElementById('templateInput');
         if (tplInput) tplInput.value = cfg.messageTemplate;
       }
+      if (cfg.members && Array.isArray(cfg.members) && cfg.members.length > 0) {
+        currentMembers = [...cfg.members];
+        const mInput = document.getElementById('membersInput');
+        if (mInput) mInput.value = cfg.members.join(', ');
+      } else if (currentMembers.length) {
+        const mInput = document.getElementById('membersInput');
+        if (mInput && !mInput.value) mInput.value = currentMembers.join(', ');
+      }
+      if (cfg.cooldownMinutes !== undefined) {
+        const cdInput = document.getElementById('cooldownInput');
+        if (cdInput) cdInput.value = cfg.cooldownMinutes;
+      }
       updateTemplatePreview();
+    }
+
+    function handleMembersChange() {
+      const input = document.getElementById('membersInput');
+      const raw = input.value.trim();
+      if (raw) {
+        currentMembers = raw.split(',').map(m => m.trim()).filter(Boolean);
+      }
+      updateTemplatePreview();
+      handleConfigChange();
     }
 
     function insertToken(token) {
@@ -1080,6 +1141,8 @@
       const modeRadio = document.querySelector('input[name="targetModeRadio"]:checked');
       const targetMode = modeRadio ? modeRadio.value : 'subsequent';
       const template = document.getElementById('templateInput').value.trim();
+      const membersRaw = document.getElementById('membersInput').value.trim();
+      const cooldownVal = parseInt(document.getElementById('cooldownInput').value, 10);
 
       if (!template) {
         alert('Template pesan tidak boleh kosong.');
@@ -1091,10 +1154,16 @@
         return;
       }
 
+      const membersList = membersRaw
+        ? membersRaw.split(',').map(m => m.trim()).filter(Boolean)
+        : currentMembers;
+
       const payload = {
         sessionDays: selectedDays,
         targetMode,
-        messageTemplate: template
+        messageTemplate: template,
+        members: membersList,
+        cooldownMinutes: !isNaN(cooldownVal) && cooldownVal > 0 ? cooldownVal : 15
       };
 
       if (ws && ws.readyState === WebSocket.OPEN) {

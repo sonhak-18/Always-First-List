@@ -19,7 +19,8 @@ function getTargetDate(
   specifiedDay = null,
   baseDate = null,
   sessionDays = ['senin', 'rabu'],
-  targetMode = 'subsequent'
+  targetMode = 'subsequent',
+  isCancellation = false
 ) {
   const now = baseDate ? dayjs(baseDate) : dayjs();
 
@@ -55,17 +56,17 @@ function getTargetDate(
   if (validIndices.length === 1) {
     const onlyDay = validIndices[0];
     let daysDiff = onlyDay - currentDayIndex;
-    if (targetMode === 'immediate') {
+    if (targetMode === 'immediate' && !isCancellation) {
       if (daysDiff < 0) daysDiff += 7;
     } else {
-      // Subsequent mode: confirming this week's session opens next week's session
+      // Subsequent mode or cancellation: confirming/cancelling this week opens next week's session
       if (daysDiff <= 0) daysDiff += 7;
     }
     return now.add(daysDiff, 'day');
   }
 
   // Multiple session days per week
-  if (targetMode === 'immediate') {
+  if (targetMode === 'immediate' && !isCancellation) {
     // Mode A (Immediate / Announced Session):
     // Target is the closest upcoming session day.
     let bestDiff = null;
@@ -131,9 +132,10 @@ function generateListingText(
   baseDate = null,
   template = null,
   sessionDays = ['senin', 'rabu'],
-  targetMode = 'subsequent'
+  targetMode = 'subsequent',
+  isCancellation = false
 ) {
-  const targetDate = getTargetDate(specifiedDay, baseDate, sessionDays, targetMode);
+  const targetDate = getTargetDate(specifiedDay, baseDate, sessionDays, targetMode, isCancellation);
   const formattedDate = formatListingDate(targetDate);
   const dayName = targetDate.format('dddd');
   const capitalizedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1);

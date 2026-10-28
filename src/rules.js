@@ -106,6 +106,7 @@ function analyzeMessage(text) {
       shouldTrigger: true,
       reason: 'Pembatalan sesi terdekat, membuka kuota sesi berikutnya!',
       targetDay: null,
+      isCancellation: true,
       detectedKeywords,
     };
   }

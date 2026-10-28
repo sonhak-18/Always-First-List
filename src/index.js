@@ -212,19 +212,27 @@ async function startBot() {
 
         if (isDosen) {
           const now = Date.now();
+          const botConfig = getConfig();
+          const effectiveCooldown = (typeof botConfig.cooldownMinutes === 'number' && botConfig.cooldownMinutes > 0)
+            ? botConfig.cooldownMinutes
+            : COOLDOWN_MINUTES;
           const elapsedMinutes = (now - lastTriggerTime) / (1000 * 60);
 
-          if (elapsedMinutes >= COOLDOWN_MINUTES) {
+          if (elapsedMinutes >= effectiveCooldown) {
             const analysis = analyzeMessage(text);
             if (analysis.shouldTrigger) {
-              const botConfig = getConfig();
+              const effectiveMembers = (Array.isArray(botConfig.members) && botConfig.members.length > 0)
+                ? botConfig.members
+                : MEMBERS;
+
               const listingMessage = generateListingText(
                 analysis.targetDay,
-                MEMBERS,
+                effectiveMembers,
                 null,
                 botConfig.messageTemplate,
                 botConfig.sessionDays,
-                botConfig.targetMode
+                botConfig.targetMode,
+                analysis.isCancellation
               );
               const targetJid = TARGET_GROUP_JID;
 
