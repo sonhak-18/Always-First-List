@@ -13,7 +13,14 @@ const DAYS_MAP = {
   sabtu: 6,
 };
 
-function getTargetDate(specifiedDay = null, baseDate = null, sessionDays = ['senin', 'rabu']) {
+const DAYS_LIST = ['minggu', 'senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
+
+function getTargetDate(
+  specifiedDay = null,
+  baseDate = null,
+  sessionDays = ['senin', 'rabu'],
+  targetMode = 'subsequent'
+) {
   const now = baseDate ? dayjs(baseDate) : dayjs();
 
   // If the lecturer explicitly specifies a target day, calculate the next occurrence of that day
@@ -29,31 +36,84 @@ function getTargetDate(specifiedDay = null, baseDate = null, sessionDays = ['sen
     }
   }
 
-  // Academic cycle: listing happens prior to confirmation.
-  // Today's confirmation is the flag triggering the listing for the subsequent session.
   const currentDayIndex = now.day();
 
-  const validDays = (Array.isArray(sessionDays) && sessionDays.length >= 2)
-    ? sessionDays.map(d => DAYS_MAP[String(d).toLowerCase()]).filter(v => v !== undefined)
-    : [1, 3];
+  // Parse and sort unique session day indices
+  const validIndices = Array.from(
+    new Set(
+      (Array.isArray(sessionDays) && sessionDays.length > 0 ? sessionDays : ['senin', 'rabu'])
+        .map(d => DAYS_MAP[String(d).toLowerCase()])
+        .filter(v => v !== undefined)
+    )
+  ).sort((a, b) => a - b);
 
-  validDays.sort((a, b) => a - b);
-  const day1 = validDays[0];
-  const day2 = validDays[1];
+  if (validIndices.length === 0) {
+    validIndices.push(1, 3);
+  }
 
-  let targetIndex;
+  // Single session day per week (e.g. only Wednesday or only Friday)
+  if (validIndices.length === 1) {
+    const onlyDay = validIndices[0];
+    let daysDiff = onlyDay - currentDayIndex;
+    if (targetMode === 'immediate') {
+      if (daysDiff < 0) daysDiff += 7;
+    } else {
+      // Subsequent mode: confirming this week's session opens next week's session
+      if (daysDiff <= 0) daysDiff += 7;
+    }
+    return now.add(daysDiff, 'day');
+  }
+
+  // Multiple session days per week
+  if (targetMode === 'immediate') {
+    // Mode A (Immediate / Announced Session):
+    // Target is the closest upcoming session day.
+    let bestDiff = null;
+    for (const dayIdx of validIndices) {
+      let diff = dayIdx - currentDayIndex;
+      if (diff < 0) diff += 7;
+      if (bestDiff === null || diff < bestDiff) {
+        bestDiff = diff;
+      }
+    }
+    return now.add(bestDiff, 'day');
+  }
+
+  // Mode B (Subsequent Cycle / Advance Listing):
+  // Listing always precedes confirmation. Confirming session N triggers listing for session N+1.
+  const k = validIndices.length;
+  let targetIdx;
   let addDays = 0;
 
-  if (currentDayIndex <= day1) {
-    targetIndex = day2;
-    addDays = targetIndex - currentDayIndex;
+  if (currentDayIndex <= validIndices[0]) {
+    // Before or on first session -> target is second session of this week
+    targetIdx = validIndices[1];
+    addDays = targetIdx - currentDayIndex;
     if (addDays <= 0) addDays += 7;
-  } else if (currentDayIndex <= day2) {
-    targetIndex = day1;
-    addDays = (targetIndex - currentDayIndex) + 7;
   } else {
-    targetIndex = day1;
-    addDays = (targetIndex - currentDayIndex) + 7;
+    // Find where currentDayIndex falls among the session days
+    let found = false;
+    for (let i = 0; i < k - 1; i++) {
+      if (currentDayIndex <= validIndices[i + 1]) {
+        // Confirmation is for session (i + 1), target is the next session
+        if (i + 2 < k) {
+          targetIdx = validIndices[i + 2];
+          addDays = targetIdx - currentDayIndex;
+        } else {
+          // Wrap around to first session of next week
+          targetIdx = validIndices[0];
+          addDays = (targetIdx - currentDayIndex) + 7;
+        }
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      // After the last session day of the week -> wraps around to first session of next week
+      targetIdx = validIndices[0];
+      addDays = (targetIdx - currentDayIndex) + 7;
+    }
   }
 
   return now.add(addDays, 'day');
@@ -70,9 +130,10 @@ function generateListingText(
   members = ['Nama 1', 'Nama 2', 'Nama 3'],
   baseDate = null,
   template = null,
-  sessionDays = ['senin', 'rabu']
+  sessionDays = ['senin', 'rabu'],
+  targetMode = 'subsequent'
 ) {
-  const targetDate = getTargetDate(specifiedDay, baseDate, sessionDays);
+  const targetDate = getTargetDate(specifiedDay, baseDate, sessionDays, targetMode);
   const formattedDate = formatListingDate(targetDate);
   const dayName = targetDate.format('dddd');
   const capitalizedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1);
@@ -95,4 +156,5 @@ module.exports = {
   formatListingDate,
   generateListingText,
   DAYS_MAP,
+  DAYS_LIST,
 };

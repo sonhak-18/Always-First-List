@@ -131,7 +131,8 @@ class DashboardServer {
           members,
           null,
           config.messageTemplate,
-          config.sessionDays
+          config.sessionDays,
+          config.targetMode
         );
       }
       ws.send(JSON.stringify({

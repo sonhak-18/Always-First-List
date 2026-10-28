@@ -3,5 +3,6 @@
   "sessionDays": [
     "senin",
     "rabu"
-  ]
+  ],
+  "targetMode": "subsequent"
 }

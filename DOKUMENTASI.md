@@ -82,9 +82,12 @@ flowchart TD
 
 ---
 
-## 4. Logika Siklus Bimbingan Akademik
+## 4. Logika Siklus dan Fleksibilitas Jadwal
 
-Prinsip operasional: **Pengiriman format antrean selalu mendahului pelaksanaan konfirmasi**. Chat konfirmasi kuota dari dosen pembimbing berfungsi sebagai pemicu untuk segera mengamankan kuota sesi bimbingan berikutnya:
+Aplikasi menyediakan dua metode kalkulasi target antrean yang dapat dipilih melalui Konsol Web pada berkas `config.json`:
+
+### Metode A: Siklus Maju / Advance Listing (`targetMode: "subsequent"`)
+Prinsip kerja: **Pengiriman format antrean selalu mendahului pelaksanaan konfirmasi**. Chat konfirmasi kuota sesi berjalan berfungsi sebagai sinyal pemicu untuk langsung merebut kuota sesi berikutnya:
 
 | Saat Dosen Konfirmasi di Hari | Sesi yang Berjalan | Target Listing yang Dibuka Bot |
 | :--- | :--- | :--- |
@@ -92,9 +95,18 @@ Prinsip operasional: **Pengiriman format antrean selalu mendahului pelaksanaan k
 | **Selasa atau Rabu** | Bimbingan Rabu | **Senin minggu berikutnya** |
 | **Dosen menyebut hari khusus** | - | **Hari spesifik yang disebut dosen** |
 
+### Metode B: Sesi Terdekat / Diumumkan (`targetMode: "immediate"`)
+Prinsip kerja: **Pengiriman format antrean ditujukan langsung untuk sesi yang diumumkan**. Saat dosen membuka kuota (misal: *"Besok bimbingan ya kuota 6 orang"* atau chat konfirmasi di hari bimbingan), bot langsung mendaftarkan antrean untuk sesi terdekat tersebut tanpa melompat ke siklus berikutnya.
+
+### Fleksibilitas Frekuensi Hari Bimbingan:
+Bot tidak dibatasi hanya pada 2 hari sepekan. Sistem mendukung konfigurasi hari apa pun:
+- **1x sepekan** (contoh: Jumat saja): Setiap konfirmasi otomatis membuka jadwal Jumat berikutnya.
+- **2x sepekan** (contoh: Senin & Rabu, atau Selasa & Kamis).
+- **3x sepekan atau lebih** (contoh: Senin, Rabu, & Jumat): Bot otomatis berputar maju secara sekuensial antar sesi yang aktif.
+
 ### Aturan Tambahan:
-- **Pengalihan Jadwal (Redirect)**: Jika dosen mengirim pesan semacam *"Senin nggak bisa, bisanya rabu ya"*, mesin aturan mendeteksi pola kata kunci pengalihan dan menetapkan target bimbingan ke hari Rabu terdekat.
-- **Pembatalan Sesi Terdekat (Cancellation)**: Jika dosen mengumumkan pembatalan untuk sesi terdekat (contoh: *"Besok saya tidak bisa bimbingan"*), bot tidak mengabaikan pesan tersebut, melainkan langsung membuka dan mengirimkan format antrean untuk siklus berikutnya agar slot tetap terkunci lebih awal.
+- **Pengalihan Jadwal (Redirect)**: Jika dosen mengirim pesan semacam *"Senin nggak bisa, bisanya rabu ya"*, mesin aturan mendeteksi pola kata kunci pengalihan dan menetapkan target bimbingan ke hari spesifik yang ditunjuk dosen terlepas dari mode yang aktif.
+- **Pembatalan Sesi Terdekat (Cancellation)**: Jika dosen mengumumkan pembatalan untuk sesi terdekat (contoh: *"Besok saya tidak bisa bimbingan"*), bot tidak mengabaikan pesan tersebut, melainkan langsung membuka dan mengirimkan format antrean untuk jadwal berikutnya agar slot tetap terkunci lebih awal.
 - **Dosen Berhalangan Panjang (Blacklist)**: Jika dosen mengumumkan tugas luar kota atau libur panjang (contoh: *"Besok sampai minggu depan saya ada penugasan luar kota"*), pesan diblokir oleh blacklist sehingga bot tidak mengirim pesan apa pun.
 
 ---

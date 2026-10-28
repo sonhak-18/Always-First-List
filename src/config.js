@@ -6,6 +6,7 @@ const CONFIG_FILE = path.resolve(__dirname, '../config.json');
 const DEFAULT_CONFIG = {
   messageTemplate: 'List bimbingan {date}:\n{members}',
   sessionDays: ['senin', 'rabu'],
+  targetMode: 'subsequent',
 };
 
 let currentConfig = null;

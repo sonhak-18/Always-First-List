@@ -429,16 +429,83 @@
       line-height: 1.45;
     }
 
-    .form-grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .form-field {
+    /* Mode Selector styling */
+    .mode-options {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
+    }
+
+    .mode-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 8px 10px;
+      background: #050608;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      cursor: pointer;
+    }
+
+    .mode-label:hover {
+      border-color: var(--cyan);
+    }
+
+    .mode-label input[type="radio"] {
+      margin-top: 2px;
+      accent-color: var(--cyan);
+      cursor: pointer;
+    }
+
+    .mode-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .mode-name {
+      color: var(--text-bright);
+      font-weight: 600;
+      font-size: 11px;
+    }
+
+    .mode-desc {
+      color: var(--text-dim);
+      font-size: 10px;
+      line-height: 1.35;
+    }
+
+    /* Day chip toggle styling */
+    .day-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .day-chip {
+      background: #050608;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: inherit;
+      font-size: 11px;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 2px;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+
+    .day-chip:hover {
+      border-color: var(--cyan);
+      color: var(--text-bright);
+    }
+
+    .day-chip.active {
+      background: rgba(0, 210, 255, 0.1);
+      border-color: var(--cyan);
+      color: var(--cyan);
+      font-weight: 700;
     }
 
     .form-label {
@@ -447,22 +514,6 @@
       color: var(--text-dim);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-    }
-
-    .form-select {
-      background: #050608;
-      border: 1px solid var(--border);
-      color: var(--text-bright);
-      font-family: inherit;
-      font-size: 11px;
-      padding: 6px 8px;
-      outline: none;
-      border-radius: 2px;
-      cursor: pointer;
-    }
-
-    .form-select:focus, .form-textarea:focus {
-      border-color: var(--cyan);
     }
 
     .form-textarea {
@@ -474,9 +525,13 @@
       padding: 8px;
       outline: none;
       resize: vertical;
-      min-height: 90px;
+      min-height: 85px;
       line-height: 1.5;
       border-radius: 2px;
+    }
+
+    .form-textarea:focus {
+      border-color: var(--cyan);
     }
 
     .token-bar {
@@ -657,46 +712,57 @@
 
         <!-- View 2: Schedule & Message Template Settings -->
         <div id="viewConfig" class="tab-view" style="display: none;">
-          <!-- Schedule Setup Card -->
+          
+          <!-- Mode Selection Card -->
           <div class="config-card">
             <div class="config-header">
-              <span>[JADWAL SIKLUS BIMBINGAN]</span>
+              <span>[1. METODE LISTING ANTREAN]</span>
             </div>
             <div class="config-desc">
-              Pilih dua hari sesi bimbingan rutin. Konfirmasi dosen pada/sebelum Sesi 1 otomatis membuka antrean Sesi 2. Konfirmasi pada Sesi 2 otomatis membuka Sesi 1 minggu berikutnya.
+              Tentukan cara bot menetapkan tanggal target listing saat dosen membuka kuota:
             </div>
-            <div class="form-grid-2">
-              <div class="form-field">
-                <label class="form-label" for="sessionDay1">Sesi 1 (Hari Pertama):</label>
-                <select id="sessionDay1" class="form-select" onchange="handleConfigChange()">
-                  <option value="senin" selected>Senin</option>
-                  <option value="selasa">Selasa</option>
-                  <option value="rabu">Rabu</option>
-                  <option value="kamis">Kamis</option>
-                  <option value="jumat">Jumat</option>
-                  <option value="sabtu">Sabtu</option>
-                  <option value="minggu">Minggu</option>
-                </select>
-              </div>
-              <div class="form-field">
-                <label class="form-label" for="sessionDay2">Sesi 2 (Hari Kedua):</label>
-                <select id="sessionDay2" class="form-select" onchange="handleConfigChange()">
-                  <option value="senin">Senin</option>
-                  <option value="selasa">Selasa</option>
-                  <option value="rabu" selected>Rabu</option>
-                  <option value="kamis">Kamis</option>
-                  <option value="jumat">Jumat</option>
-                  <option value="sabtu">Sabtu</option>
-                  <option value="minggu">Minggu</option>
-                </select>
-              </div>
+            <div class="mode-options">
+              <label class="mode-label">
+                <input type="radio" name="targetModeRadio" value="subsequent" id="modeSubsequent" onchange="handleConfigChange()" checked>
+                <div class="mode-info">
+                  <span class="mode-name">Siklus Maju (Listing Sesi Berikutnya)</span>
+                  <span class="mode-desc">Konfirmasi kuota hari ini menjadi pemicu untuk merebut kuota sesi jadwal berikutnya (antrean mendahului konfirmasi).</span>
+                </div>
+              </label>
+              <label class="mode-label">
+                <input type="radio" name="targetModeRadio" value="immediate" id="modeImmediate" onchange="handleConfigChange()">
+                <div class="mode-info">
+                  <span class="mode-name">Sesi Terdekat / Diumumkan (Immediate)</span>
+                  <span class="mode-desc">Konfirmasi kuota langsung merebut kuota untuk sesi bimbingan yang diumumkan dosen atau jadwal terdekat berikutnya.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Schedule Days Setup Card -->
+          <div class="config-card">
+            <div class="config-header">
+              <span>[2. HARI JADWAL BIMBINGAN RUTIN]</span>
+              <span id="sessionStats" style="color: var(--cyan); font-size: 10px;">2 sesi / pekan</span>
+            </div>
+            <div class="config-desc">
+              Pilih hari-hari pelaksanaan bimbingan (bisa 1 hari, 2 hari, 3 hari, atau lebih):
+            </div>
+            <div class="day-selector" id="daySelectorContainer">
+              <button type="button" class="day-chip active" data-day="senin" onclick="toggleDayChip('senin')">Senin</button>
+              <button type="button" class="day-chip" data-day="selasa" onclick="toggleDayChip('selasa')">Selasa</button>
+              <button type="button" class="day-chip active" data-day="rabu" onclick="toggleDayChip('rabu')">Rabu</button>
+              <button type="button" class="day-chip" data-day="kamis" onclick="toggleDayChip('kamis')">Kamis</button>
+              <button type="button" class="day-chip" data-day="jumat" onclick="toggleDayChip('jumat')">Jumat</button>
+              <button type="button" class="day-chip" data-day="sabtu" onclick="toggleDayChip('sabtu')">Sabtu</button>
+              <button type="button" class="day-chip" data-day="minggu" onclick="toggleDayChip('minggu')">Minggu</button>
             </div>
           </div>
 
           <!-- Template Setup Card -->
           <div class="config-card">
             <div class="config-header">
-              <span>[FORMAT PESAN LISTING ANTREAN]</span>
+              <span>[3. FORMAT PESAN LISTING ANTREAN]</span>
             </div>
             <div class="config-desc">
               Atur format teks yang akan dikirim bot ke grup antrean. Klik tombol variabel untuk menyisipkan data dinamis:
@@ -718,6 +784,7 @@
               <span id="saveStatus" class="status-msg"></span>
             </div>
           </div>
+
         </div>
 
       </div>
@@ -730,8 +797,10 @@
     let currentDict = { whitelist: [], blacklist: [], redirect: [], cancellation: [] };
     let currentConfig = {
       messageTemplate: 'List bimbingan {date}:\n{members}',
-      sessionDays: ['senin', 'rabu']
+      sessionDays: ['senin', 'rabu'],
+      targetMode: 'subsequent'
     };
+    let selectedDays = ['senin', 'rabu'];
     let currentMembers = ['Nama 1', 'Nama 2', 'Nama 3'];
 
     async function loadInitialData() {
@@ -837,14 +906,53 @@
       }
     }
 
+    function toggleDayChip(day) {
+      if (selectedDays.includes(day)) {
+        if (selectedDays.length <= 1) {
+          alert('Minimal pilih 1 hari jadwal bimbingan.');
+          return;
+        }
+        selectedDays = selectedDays.filter(d => d !== day);
+      } else {
+        selectedDays.push(day);
+      }
+      renderDayChips();
+      handleConfigChange();
+    }
+
+    function renderDayChips() {
+      const container = document.getElementById('daySelectorContainer');
+      if (!container) return;
+      const chips = container.querySelectorAll('.day-chip');
+      chips.forEach(chip => {
+        const d = chip.getAttribute('data-day');
+        if (selectedDays.includes(d)) {
+          chip.classList.add('active');
+        } else {
+          chip.classList.remove('active');
+        }
+      });
+      const stats = document.getElementById('sessionStats');
+      if (stats) {
+        stats.textContent = `${selectedDays.length} sesi / pekan`;
+      }
+    }
+
     function applyConfig(cfg) {
       if (!cfg) return;
       currentConfig = cfg;
-      if (cfg.sessionDays && cfg.sessionDays.length >= 2) {
-        const s1 = document.getElementById('sessionDay1');
-        const s2 = document.getElementById('sessionDay2');
-        if (s1) s1.value = cfg.sessionDays[0];
-        if (s2) s2.value = cfg.sessionDays[1];
+      if (cfg.sessionDays && Array.isArray(cfg.sessionDays) && cfg.sessionDays.length > 0) {
+        selectedDays = [...cfg.sessionDays];
+        renderDayChips();
+      }
+      if (cfg.targetMode) {
+        if (cfg.targetMode === 'immediate') {
+          const imm = document.getElementById('modeImmediate');
+          if (imm) imm.checked = true;
+        } else {
+          const sub = document.getElementById('modeSubsequent');
+          if (sub) sub.checked = true;
+        }
       }
       if (cfg.messageTemplate !== undefined) {
         const tplInput = document.getElementById('templateInput');
@@ -871,26 +979,64 @@
       statusEl.style.color = 'var(--amber)';
     }
 
-    function calculatePreviewTargetDate(sessionDays) {
+    function calculatePreviewTargetDate(sessionDays, targetMode) {
       const dayMap = { minggu: 0, senin: 1, selasa: 2, rabu: 3, kamis: 4, jumat: 5, sabtu: 6 };
       const now = new Date();
       const currentDay = now.getDay();
-      const d1 = dayMap[sessionDays[0]] !== undefined ? dayMap[sessionDays[0]] : 1;
-      const d2 = dayMap[sessionDays[1]] !== undefined ? dayMap[sessionDays[1]] : 3;
-      const days = [d1, d2].sort((a, b) => a - b);
-      let targetDayIdx = days[0];
+
+      const validIndices = Array.from(new Set(
+        sessionDays.map(d => dayMap[d.toLowerCase()]).filter(v => v !== undefined)
+      )).sort((a, b) => a - b);
+
+      if (validIndices.length === 0) validIndices.push(1, 3);
+
       let addDays = 0;
 
-      if (currentDay <= days[0]) {
-        targetDayIdx = days[1];
-        addDays = targetDayIdx - currentDay;
-        if (addDays <= 0) addDays += 7;
-      } else if (currentDay <= days[1]) {
-        targetDayIdx = days[0];
-        addDays = (targetDayIdx - currentDay) + 7;
+      if (validIndices.length === 1) {
+        const onlyDay = validIndices[0];
+        let diff = onlyDay - currentDay;
+        if (targetMode === 'immediate') {
+          if (diff < 0) diff += 7;
+        } else {
+          if (diff <= 0) diff += 7;
+        }
+        addDays = diff;
+      } else if (targetMode === 'immediate') {
+        let bestDiff = null;
+        for (const dayIdx of validIndices) {
+          let diff = dayIdx - currentDay;
+          if (diff < 0) diff += 7;
+          if (bestDiff === null || diff < bestDiff) {
+            bestDiff = diff;
+          }
+        }
+        addDays = bestDiff;
       } else {
-        targetDayIdx = days[0];
-        addDays = (targetDayIdx - currentDay) + 7;
+        const k = validIndices.length;
+        if (currentDay <= validIndices[0]) {
+          const targetIdx = validIndices[1];
+          addDays = targetIdx - currentDay;
+          if (addDays <= 0) addDays += 7;
+        } else {
+          let found = false;
+          for (let i = 0; i < k - 1; i++) {
+            if (currentDay <= validIndices[i + 1]) {
+              if (i + 2 < k) {
+                const targetIdx = validIndices[i + 2];
+                addDays = targetIdx - currentDay;
+              } else {
+                const targetIdx = validIndices[0];
+                addDays = (targetIdx - currentDay) + 7;
+              }
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            const targetIdx = validIndices[0];
+            addDays = (targetIdx - currentDay) + 7;
+          }
+        }
       }
 
       const targetDate = new Date(now.getTime() + addDays * 24 * 60 * 60 * 1000);
@@ -909,18 +1055,15 @@
     }
 
     function updateTemplatePreview() {
-      const day1El = document.getElementById('sessionDay1');
-      const day2El = document.getElementById('sessionDay2');
+      const modeRadio = document.querySelector('input[name="targetModeRadio"]:checked');
+      const targetMode = modeRadio ? modeRadio.value : 'subsequent';
       const tplEl = document.getElementById('templateInput');
       const previewEl = document.getElementById('templatePreview');
 
-      if (!day1El || !day2El || !tplEl || !previewEl) return;
+      if (!tplEl || !previewEl) return;
 
-      const day1 = day1El.value;
-      const day2 = day2El.value;
       const template = tplEl.value || 'List bimbingan {date}:\n{members}';
-
-      const previewDate = calculatePreviewTargetDate([day1, day2]);
+      const previewDate = calculatePreviewTargetDate(selectedDays, targetMode);
       const membersFormatted = currentMembers.map((m, i) => `${i + 1}. ${m}`).join('\n');
       const membersRaw = currentMembers.join(', ');
 
@@ -934,8 +1077,8 @@
     }
 
     function saveConfigToServer() {
-      const day1 = document.getElementById('sessionDay1').value;
-      const day2 = document.getElementById('sessionDay2').value;
+      const modeRadio = document.querySelector('input[name="targetModeRadio"]:checked');
+      const targetMode = modeRadio ? modeRadio.value : 'subsequent';
       const template = document.getElementById('templateInput').value.trim();
 
       if (!template) {
@@ -943,13 +1086,14 @@
         return;
       }
 
-      if (day1 === day2) {
-        alert('Sesi 1 dan Sesi 2 tidak boleh memilih hari yang sama.');
+      if (!selectedDays || selectedDays.length === 0) {
+        alert('Pilih minimal 1 hari jadwal bimbingan.');
         return;
       }
 
       const payload = {
-        sessionDays: [day1, day2],
+        sessionDays: selectedDays,
+        targetMode,
         messageTemplate: template
       };
 

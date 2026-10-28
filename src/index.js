@@ -223,7 +223,8 @@ async function startBot() {
                 MEMBERS,
                 null,
                 botConfig.messageTemplate,
-                botConfig.sessionDays
+                botConfig.sessionDays,
+                botConfig.targetMode
               );
               const targetJid = TARGET_GROUP_JID;
 
