@@ -6,6 +6,6 @@
   ],
   "targetMode": "subsequent",
   "members": [],
-  "cooldownMinutes": 15,
+  "cooldownMinutes": 5,
   "registeredSessionDate": "2026-11-02"
 }

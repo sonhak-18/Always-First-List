@@ -5,6 +5,7 @@ const http = require('http');
 const { WebSocketServer, WebSocket } = require('ws');
 const fs = require('fs');
 const { execSync } = require('child_process');
+const { EventEmitter } = require('events');
 const { getDictionary, addKeyword, removeKeyword, saveDictionary } = require('./dictionary');
 const { getConfig, updateConfig } = require('./config');
 const { analyzeMessage } = require('./rules');
@@ -25,8 +26,9 @@ function releasePort(port) {
   } catch (err) {}
 }
 
-class DashboardServer {
+class DashboardServer extends EventEmitter {
   constructor(port = 3000, host = process.env.HOST || '127.0.0.1') {
+    super();
     this.port = port;
     this.host = host;
     this.app = express();
@@ -198,6 +200,7 @@ class DashboardServer {
         this.updateState({ cooldownMinutes: updated.cooldownMinutes });
       }
       this.broadcast('config_updated', updated);
+      this.emit('config_updated', updated);
       this.addSystemLog('Pengaturan jadwal, format pesan, dan data anggota berhasil disimpan.', 'success');
     } else if (type === 'add_keyword') {
       const validCategories = ['blacklist', 'cancellation', 'redirect', 'whitelist'];

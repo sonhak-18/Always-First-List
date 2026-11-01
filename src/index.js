@@ -24,6 +24,35 @@ let lastTriggerTime = 0;
 const dashboard = new DashboardServer(PORT, HOST);
 const authPath = path.resolve(__dirname, '../auth_info_baileys');
 const groupParticipantMap = new Map();
+const groupMetadataCache = new Map();
+let precomputedListing = null;
+
+function refreshPrecomputedListing() {
+  try {
+    const cfg = getConfig();
+    const effectiveMembers = (Array.isArray(cfg.members) && cfg.members.length > 0)
+      ? cfg.members
+      : MEMBERS;
+    const targetDateObj = getTargetDate(null, null, cfg.sessionDays, cfg.targetMode, false);
+    const text = generateListingText(
+      null,
+      effectiveMembers,
+      null,
+      cfg.messageTemplate,
+      cfg.sessionDays,
+      cfg.targetMode,
+      false
+    );
+    precomputedListing = {
+      text,
+      targetDateObj,
+      targetDateStr: targetDateObj.format('YYYY-MM-DD'),
+      mode: cfg.targetMode,
+    };
+  } catch (err) {}
+}
+
+dashboard.on('config_updated', () => refreshPrecomputedListing());
 
 function normalizeId(jid) {
   if (!jid) return '';
@@ -83,16 +112,19 @@ async function updateGroupCache(sock, groupJid) {
   if (!groupJid) return;
   try {
     const meta = await sock.groupMetadata(groupJid);
-    const mapping = new Map();
-    for (const p of meta.participants || []) {
-      const phone = p.id ? normalizeId(p.id) : '';
-      const lid = p.lid ? normalizeId(p.lid) : '';
-      if (phone && lid) {
-        mapping.set(lid, phone);
-        mapping.set(phone, lid);
+    if (meta && Array.isArray(meta.participants)) {
+      groupMetadataCache.set(groupJid, meta);
+      const mapping = new Map();
+      for (const p of meta.participants) {
+        const phone = p.id ? normalizeId(p.id) : '';
+        const lid = p.lid ? normalizeId(p.lid) : '';
+        if (phone && lid) {
+          mapping.set(lid, phone);
+          mapping.set(phone, lid);
+        }
       }
+      groupParticipantMap.set(groupJid, mapping);
     }
-    groupParticipantMap.set(groupJid, mapping);
   } catch (err) {}
 }
 
@@ -120,6 +152,8 @@ async function startBot() {
     markOnlineOnConnect: true,
     keepAliveIntervalMs: 10000,
     retryRequestDelayMs: 150,
+    emitOwnEvents: false,
+    cachedGroupMetadata: async (jid) => groupMetadataCache.get(jid),
   });
 
   sock.ev.on('creds.update', saveCreds);
@@ -172,18 +206,43 @@ async function startBot() {
           await updateGroupCache(sock, SOURCE_GROUP_JID);
         }
         if (TARGET_GROUP_JID) {
-          await sock.groupMetadata(TARGET_GROUP_JID).catch(() => {});
+          await updateGroupCache(sock, TARGET_GROUP_JID);
         }
+        refreshPrecomputedListing();
       } catch (err) {}
     }
   });
 
-  // Keep target group metadata and E2EE ciphers warm in memory
+  sock.ev.on('groups.update', (updates) => {
+    for (const u of updates) {
+      if (groupMetadataCache.has(u.id)) {
+        const existing = groupMetadataCache.get(u.id);
+        groupMetadataCache.set(u.id, { ...existing, ...u });
+      }
+    }
+  });
+
+  sock.ev.on('group-participants.update', ({ id, participants, action }) => {
+    const meta = groupMetadataCache.get(id);
+    if (meta && Array.isArray(meta.participants)) {
+      if (action === 'add') {
+        const newParts = participants.map(p => ({ id: p, admin: null }));
+        meta.participants.push(...newParts);
+      } else if (action === 'remove') {
+        meta.participants = meta.participants.filter(p => !participants.includes(p.id));
+      }
+      groupMetadataCache.set(id, meta);
+    }
+    updateGroupCache(sock, id).catch(() => {});
+  });
+
+  // Keep target group metadata, E2EE sender keys and precomputed text warm
   setInterval(() => {
     if (TARGET_GROUP_JID && sock?.ws?.readyState === 1) {
-      sock.groupMetadata(TARGET_GROUP_JID).catch(() => {});
+      updateGroupCache(sock, TARGET_GROUP_JID).catch(() => {});
     }
-  }, 15 * 60 * 1000);
+    refreshPrecomputedListing();
+  }, 2 * 60 * 1000);
 
   sock.ev.on('messages.upsert', async (chatUpdate) => {
     try {
@@ -212,21 +271,20 @@ async function startBot() {
         const isDosen = checkIsDosen(senderJid, groupJid, DOSEN_PHONE);
 
         if (isDosen) {
-          const now = Date.now();
-          const botConfig = getConfig();
+          const tReceived = Date.now();
+          const currentConfig = getConfig();
 
           // Auto-expire past registered session date
-          if (botConfig.registeredSessionDate && isDatePassed(botConfig.registeredSessionDate)) {
+          if (currentConfig.registeredSessionDate && isDatePassed(currentConfig.registeredSessionDate)) {
             updateConfig({ registeredSessionDate: null });
             dashboard.broadcast('config_updated', getConfig());
             dashboard.addSystemLog('Sesi bimbingan sebelumnya telah selesai. Status pendaftaran direset otomatis.', 'info');
           }
 
-          const currentConfig = getConfig();
           const effectiveCooldown = (typeof currentConfig.cooldownMinutes === 'number' && currentConfig.cooldownMinutes > 0)
             ? currentConfig.cooldownMinutes
             : COOLDOWN_MINUTES;
-          const elapsedMinutes = (now - lastTriggerTime) / (1000 * 60);
+          const elapsedMinutes = (tReceived - lastTriggerTime) / (1000 * 60);
 
           if (elapsedMinutes >= effectiveCooldown) {
             const analysis = analyzeMessage(text, {
@@ -246,50 +304,67 @@ async function startBot() {
                 ? currentConfig.members
                 : MEMBERS;
 
-              const targetDateObj = getTargetDate(
-                analysis.targetDay,
-                null,
-                currentConfig.sessionDays,
-                currentConfig.targetMode,
-                analysis.isCancellation
-              );
-              const targetDateStr = targetDateObj.format('YYYY-MM-DD');
+              let targetDateObj;
+              let targetDateStr;
+              let listingMessage;
 
-              const listingMessage = generateListingText(
-                analysis.targetDay,
-                effectiveMembers,
-                null,
-                currentConfig.messageTemplate,
-                currentConfig.sessionDays,
-                currentConfig.targetMode,
-                analysis.isCancellation
-              );
+              // Ultra-fast path: Use pre-computed payload when no custom day redirect is needed
+              if (!analysis.targetDay && !analysis.isCancellation && precomputedListing) {
+                targetDateObj = precomputedListing.targetDateObj;
+                targetDateStr = precomputedListing.targetDateStr;
+                listingMessage = precomputedListing.text;
+              } else {
+                targetDateObj = getTargetDate(
+                  analysis.targetDay,
+                  null,
+                  currentConfig.sessionDays,
+                  currentConfig.targetMode,
+                  analysis.isCancellation
+                );
+                targetDateStr = targetDateObj.format('YYYY-MM-DD');
+                listingMessage = generateListingText(
+                  analysis.targetDay,
+                  effectiveMembers,
+                  null,
+                  currentConfig.messageTemplate,
+                  currentConfig.sessionDays,
+                  currentConfig.targetMode,
+                  analysis.isCancellation
+                );
+              }
+
               const targetJid = TARGET_GROUP_JID;
 
               if (targetJid && targetJid.includes('@g.us')) {
                 const sendStartTime = Date.now();
-                // Critical path: Dispatch immediately without waiting on disk I/O
+                const internalLatency = sendStartTime - tReceived;
+
                 sock.sendMessage(targetJid, { text: listingMessage }).then(() => {
-                  const latency = Date.now() - sendStartTime;
-                  lastTriggerTime = Date.now();
+                  const ackTime = Date.now();
+                  const networkLatency = ackTime - sendStartTime;
+                  const totalLatency = ackTime - tReceived;
+                  lastTriggerTime = ackTime;
 
                   // Lock in registered session date to avoid re-triggering during H-1 confirmations
                   const updatedCfg = updateConfig({ registeredSessionDate: targetDateStr });
                   dashboard.broadcast('config_updated', updatedCfg);
+                  refreshPrecomputedListing();
 
                   dashboard.addTriggerLog({
-                    timestamp: Date.now(),
+                    timestamp: ackTime,
                     text,
                     targetDay: analysis.targetDay,
                     listingMessage,
-                    latency,
+                    latency: totalLatency,
+                    internalLatency,
+                    networkLatency,
                     action: analysis.action,
                   });
                   dashboard.addSystemLog(
-                    `[${analysis.action === 'takeover' ? 'TAKEOVER' : 'SUCCESS'}] Listing untuk ${formatListingDate(targetDateObj)} berhasil terkirim ke ${targetJid} (${latency}ms)`,
+                    `[${analysis.action === 'takeover' ? 'TAKEOVER' : 'SUCCESS'}] Listing untuk ${formatListingDate(targetDateObj)} berhasil terkirim ke ${targetJid} (Total: ${totalLatency}ms, Internal: ${internalLatency}ms, WA Ack: ${networkLatency}ms)`,
                     'success'
                   );
-                  console.log(`[SUCCESS] Listing terkirim ke ${targetJid} dalam ${latency}ms`);
+                  console.log(`[SUCCESS] Listing terkirim ke ${targetJid} dalam ${totalLatency}ms (Internal: ${internalLatency}ms, WA Ack: ${networkLatency}ms)`);
                 }).catch((err) => {
                   console.error('[ERROR] Gagal mengirim listing:', err);
                 });
