@@ -149,6 +149,7 @@ Saat bot berjalan, buka peramban di `http://localhost:3000` untuk memanfaatkan f
   - `subsequent`: Mendaftarkan antrean untuk sesi siklus berikutnya (Advance Listing).
   - `immediate`: Mendaftarkan antrean langsung untuk sesi terdekat yang diumumkan dosen.
 - **Mode Mencuri (Agresif)**: Mengirim format antrean seketika pada setiap chat apa pun dari dosen tanpa menunggu kata kunci whitelist.
+  - **Kunci Pemicu Pengajuan Mahasiswa (`stealModeRequireConfirmation`)**: Opsi pengaman (dapat dinyalakan/dimatikan) agar Mode Mencuri hanya aktif merespons chat dosen apabila sebelumnya telah didahului oleh pesan pengajuan bimbingan dari mahasiswa (`confirmation_request`).
 - **Session Guard (Anti-Dobel & Takeover)**:
   - Mengunci tanggal sesi yang sudah didapat kelompokmu (`registeredSessionDate`).
   - **Standby otomatis**: Diam saat dosen mengonfirmasi jadwal pada H-1 agar tidak dobel kirim.

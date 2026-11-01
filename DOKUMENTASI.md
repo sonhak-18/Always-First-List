@@ -125,6 +125,8 @@ Bot tidak dibatasi hanya pada 2 hari sepekan. Sistem mendukung konfigurasi hari 
 ### Aturan Tambahan & Session Guard:
 - **Mode Mencuri (Curi Semua Waktu / Steal Mode)**:
   Saat diaktifkan (`stealMode: true`), bot beralih ke mode respons langsung: **setiap chat apa pun dari dosen di grup langsung memicu pengiriman format antrean**. Mode ini mengabaikan syarat whitelist, melewati pengecekan blacklist, dan menonaktifkan status standby sesi terdaftar. Jika dosen menyebutkan hari spesifik (contoh: *"bisanya rabu"*), tanggal target otomatis disesuaikan ke hari tersebut. Mode ini dapat dinyalakan atau dimatikan kapan saja lewat Konsol Web.
+  - **Kunci Pemicu Pengajuan Mahasiswa (`stealModeRequireConfirmation`)**:
+    Opsi tambahan yang dapat dinyalakan atau dimatikan. Saat aktif (`true`), Mode Mencuri hanya akan bersenjata (armed) jika sebelumnya ada pesan mahasiswa yang mengajukan bimbingan (pola kata kunci `confirmation_request`). Begitu dosen membalas pesan tersebut, bot seketika mengirimkan antrean. Hal ini mencegah bot terpicu oleh chat dosen yang tidak berkaitan dengan bimbingan.
 - **Kunci Sesi Terdaftar (Session Guard)**:
   Jika kelompok sudah terdaftar pada tanggal sesi tertentu (`registeredSessionDate`), bot berstatus **STANDBY (DIAM)** saat dosen mengonfirmasi jadwal pada H-1 agar tidak dobel kirim.
 - **Takeover Sesi**:

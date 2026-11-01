@@ -748,10 +748,16 @@
           <div class="sandbox-card">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
               <span style="font-weight: 600; font-size: 11px; color: var(--cyan);">Uji Pesan Dosen:</span>
-              <label style="display: inline-flex; align-items: center; gap: 5px; font-size: 10px; color: var(--amber); cursor: pointer;">
-                <input type="checkbox" id="sandboxStealMode" style="accent-color: var(--amber);" onchange="this.dataset.userTouched='1'; runSandboxTest();">
-                Simulasikan Mode Mencuri
-              </label>
+              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <label style="display: inline-flex; align-items: center; gap: 5px; font-size: 10px; color: var(--amber); cursor: pointer;">
+                  <input type="checkbox" id="sandboxStealMode" style="accent-color: var(--amber);" onchange="this.dataset.userTouched='1'; runSandboxTest();">
+                  Simulasikan Mode Mencuri
+                </label>
+                <label style="display: inline-flex; align-items: center; gap: 5px; font-size: 10px; color: var(--cyan); cursor: pointer;">
+                  <input type="checkbox" id="sandboxPrecedingPrompt" style="accent-color: var(--cyan);" onchange="this.dataset.userTouched='1'; runSandboxTest();">
+                  Ada Pengajuan Mahasiswa
+                </label>
+              </div>
             </div>
             <textarea id="sandboxInput" class="sandbox-textarea" placeholder="Masukkan pesan dosen (contoh: Silakan ya untuk 6 mahasiswa)..."></textarea>
             <button class="sandbox-btn" onclick="runSandboxTest()">Uji Pesan</button>
@@ -809,6 +815,19 @@
               <button type="submit" class="add-btn">+ Tambah</button>
             </form>
           </div>
+
+          <!-- Confirmation Request Section -->
+          <div class="dict-group">
+            <div class="dict-title">
+              <span style="color: var(--cyan);">POLA PENGAJUAN MAHASISWA (PEMICU AWAL)</span>
+              <span id="crCount" style="color: var(--text-dim);">0</span>
+            </div>
+            <div id="crTags" class="tag-container"></div>
+            <form class="add-row" onsubmit="handleAddKeyword(event, 'confirmation_request', 'crInput')">
+              <input type="text" id="crInput" class="add-input" placeholder="Tambah pola pengajuan mahasiswa...">
+              <button type="submit" class="add-btn">+ Tambah</button>
+            </form>
+          </div>
         </div>
 
         <!-- View 2: Schedule & Message Template Settings -->
@@ -823,10 +842,18 @@
             <div class="config-desc">
               Kirim format antrean seketika untuk setiap chat apa pun dari dosen di grup, tanpa menunggu kata kunci dan mengabaikan pembatasan sesi terdaftar.
             </div>
-            <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px;">
-              <label class="mode-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; padding: 6px 10px;">
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+              <label class="mode-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 10px;">
                 <input type="checkbox" id="stealModeCheckbox" onchange="handleStealModeToggle()" style="cursor: pointer; width: 15px; height: 15px; accent-color: var(--amber);">
                 <span style="font-weight: 600; font-size: 11px; color: var(--text-bright);">Aktifkan Mode Mencuri</span>
+              </label>
+
+              <label class="mode-label" id="stealModeReqLabel" style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; padding: 6px 10px; margin-left: 10px; border-left: 2px solid var(--amber);">
+                <input type="checkbox" id="stealModeReqCheckbox" onchange="handleStealModeReqToggle()" style="cursor: pointer; width: 15px; height: 15px; accent-color: var(--cyan); margin-top: 2px;">
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                  <span style="font-weight: 600; font-size: 11px; color: var(--text-bright);">Kunci Pemicu: Hanya aktif setelah ada chat mahasiswa mengajukan bimbingan</span>
+                  <span style="font-size: 10px; color: var(--text-dim);">Menunggu pesan pengajuan bimbingan dari mahasiswa sebelum merespons chat dosen. Mencegah bot terpicu oleh chat acak dosen di luar konteks bimbingan.</span>
+                </div>
               </label>
             </div>
           </div>
@@ -951,13 +978,16 @@
 
   <script>
     let ws;
-    let currentDict = { whitelist: [], blacklist: [], redirect: [], cancellation: [] };
+    let currentDict = { whitelist: [], blacklist: [], redirect: [], cancellation: [], confirmation_request: [] };
     let currentConfig = {
       messageTemplate: 'List bimbingan {date}:\n{members}',
       sessionDays: ['senin', 'rabu'],
       targetMode: 'subsequent',
       members: [],
-      cooldownMinutes: 15
+      cooldownMinutes: 15,
+      registeredSessionDate: null,
+      stealMode: false,
+      stealModeRequireConfirmation: false
     };
     let selectedDays = ['senin', 'rabu'];
     let currentMembers = [];
@@ -1178,6 +1208,13 @@
         currentConfig.stealMode = Boolean(cfg.stealMode);
         renderStealModeStatus(cfg.stealMode);
       }
+      if (cfg.stealModeRequireConfirmation !== undefined) {
+        currentConfig.stealModeRequireConfirmation = Boolean(cfg.stealModeRequireConfirmation);
+        const reqChk = document.getElementById('stealModeReqCheckbox');
+        if (reqChk) reqChk.checked = Boolean(cfg.stealModeRequireConfirmation);
+        const sbReq = document.getElementById('sandboxPrecedingPrompt');
+        if (sbReq && !sbReq.dataset.userTouched) sbReq.checked = Boolean(cfg.stealModeRequireConfirmation);
+      }
       updateTemplatePreview();
     }
 
@@ -1337,6 +1374,8 @@
       const regDate = regInput && regInput.value ? regInput.value : (currentConfig.registeredSessionDate || null);
       const stealChk = document.getElementById('stealModeCheckbox');
       const stealModeVal = stealChk ? stealChk.checked : Boolean(currentConfig.stealMode);
+      const stealReqChk = document.getElementById('stealModeReqCheckbox');
+      const stealReqVal = stealReqChk ? stealReqChk.checked : Boolean(currentConfig.stealModeRequireConfirmation);
 
       const payload = {
         sessionDays: selectedDays,
@@ -1346,6 +1385,7 @@
         cooldownMinutes: !isNaN(cooldownVal) && cooldownVal > 0 ? cooldownVal : 15,
         registeredSessionDate: regDate,
         stealMode: stealModeVal,
+        stealModeRequireConfirmation: stealReqVal,
       };
 
       if (ws && ws.readyState === WebSocket.OPEN) {
@@ -1423,6 +1463,14 @@
       const chk = document.getElementById('stealModeCheckbox');
       const isSteal = chk ? chk.checked : false;
       renderStealModeStatus(isSteal);
+      saveConfigToServer();
+    }
+
+    function handleStealModeReqToggle() {
+      const chk = document.getElementById('stealModeReqCheckbox');
+      currentConfig.stealModeRequireConfirmation = chk ? chk.checked : false;
+      const sbReq = document.getElementById('sandboxPrecedingPrompt');
+      if (sbReq && !sbReq.dataset.userTouched) sbReq.checked = currentConfig.stealModeRequireConfirmation;
       saveConfigToServer();
     }
 
@@ -1615,8 +1663,9 @@
       renderTagCategory('cnTags', 'cnCount', dict.cancellation || [], 'cn', 'cancellation');
       renderTagCategory('rdTags', 'rdCount', dict.redirect || [], 'rd', 'redirect');
       renderTagCategory('blTags', 'blCount', dict.blacklist || [], 'bl', 'blacklist');
+      renderTagCategory('crTags', 'crCount', dict.confirmation_request || [], 'rd', 'confirmation_request');
 
-      const total = (dict.whitelist?.length || 0) + (dict.cancellation?.length || 0) + (dict.redirect?.length || 0) + (dict.blacklist?.length || 0);
+      const total = (dict.whitelist?.length || 0) + (dict.cancellation?.length || 0) + (dict.redirect?.length || 0) + (dict.blacklist?.length || 0) + (dict.confirmation_request?.length || 0);
       document.getElementById('dictStats').textContent = `${total} aturan aktif`;
     }
 
@@ -1689,6 +1738,8 @@
 
       const sbChk = document.getElementById('sandboxStealMode');
       const stealModeVal = sbChk ? sbChk.checked : Boolean(currentConfig.stealMode);
+      const sbReqChk = document.getElementById('sandboxPrecedingPrompt');
+      const hasPreceding = sbReqChk ? sbReqChk.checked : false;
 
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
@@ -1697,6 +1748,8 @@
             text: val,
             registeredSessionDate: currentConfig.registeredSessionDate || null,
             stealMode: stealModeVal,
+            stealModeRequireConfirmation: Boolean(currentConfig.stealModeRequireConfirmation),
+            hasPrecedingConfirmation: hasPreceding
           }
         }));
       }

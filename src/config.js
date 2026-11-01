@@ -22,6 +22,7 @@ const DEFAULT_CONFIG = {
   cooldownMinutes: parseInt(process.env.COOLDOWN_MINUTES || '15', 10),
   registeredSessionDate: null,
   stealMode: false,
+  stealModeRequireConfirmation: false,
 };
 
 let currentConfig = null;
@@ -111,6 +112,9 @@ function sanitizeConfig(input) {
   }
   if (typeof input.stealMode === 'boolean') {
     clean.stealMode = input.stealMode;
+  }
+  if (typeof input.stealModeRequireConfirmation === 'boolean') {
+    clean.stealModeRequireConfirmation = input.stealModeRequireConfirmation;
   }
   return clean;
 }

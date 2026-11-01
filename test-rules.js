@@ -1,4 +1,4 @@
-const { analyzeMessage } = require('./src/rules');
+const { analyzeMessage, isConfirmationRequest, extractTargetDay } = require('./src/rules');
 const { generateListingText, getContextDate } = require('./src/dateHelper');
 const dayjs = require('dayjs');
 
@@ -73,6 +73,29 @@ const testCases = [
       sessionDays: ['senin', 'rabu'],
     },
   },
+  {
+    desc: 'Mode Mencuri + Kunci Pengajuan: Dosen chat TAPI BELUM ADA pengajuan mahasiswa -> TIDAK MENCURI (Diabaikan)',
+    chat: 'Pagi semuanya',
+    options: {
+      stealMode: true,
+      stealModeRequireConfirmation: true,
+      hasPrecedingConfirmation: false,
+      baseDate: SIMULATED_BASE_DATE,
+      sessionDays: ['senin', 'rabu'],
+    },
+  },
+  {
+    desc: 'Mode Mencuri + Kunci Pengajuan: Dosen chat SETELAH ADA pengajuan mahasiswa (Senin) -> MENCURI & KIRIM LIST',
+    chat: 'Iya',
+    options: {
+      stealMode: true,
+      stealModeRequireConfirmation: true,
+      hasPrecedingConfirmation: true,
+      promptTargetDay: 'senin',
+      baseDate: SIMULATED_BASE_DATE,
+      sessionDays: ['senin', 'rabu'],
+    },
+  },
 ];
 
 console.log('SIMULASI ANALISIS PESAN DOSEN');
@@ -90,3 +113,25 @@ testCases.forEach((tc, idx) => {
     console.log(generateListingText(result.targetDay, ['Nama 1', 'Nama 2', 'Nama 3'], tc.options?.baseDate));
   }
 });
+
+console.log('\n--- VERIFIKASI POLA PENGAJUAN MAHASISWA ---');
+const contoh1 = `Assalamualaikum wr wb.
+Selamat sore, Bu Tias.
+Mohon maaf mengganggu waktu dan aktivitasnya🙏🏻
+
+Mohon izin bertanya, Ibu. Apabila saya mengajukan bimbingan untuk besok hari Senin, 02 November 2026, apakah Bu Tias berkenan? Lalu sekiranya untuk waktu pelaksanaan besok pukul berapa nggih, Ibu?
+
+Terima kasih, mohon maaf apabila terdapat salah kata🙏🏻
+Wassalamualaikum wr wb.`;
+
+const contoh2 = `Assalamualaikum wr wb.
+Selamat siang, Bu Tias.
+Mohon maaf mengganggu waktu dan aktivitasnya🙏🏻
+
+Mohon izin bertanya, Ibu. Apabila saya mengajukan bimbingan untuk besok hari Rabu, 28 Oktober 2026, apakah Bu Tias berkenan? Lalu sekiranya untuk waktu pelaksanaan besok pukul berapa nggih, Ibu?
+
+Terima kasih, mohon maaf apabila terdapat salah kata🙏🏻
+Wassalamualaikum wr wb.`;
+
+console.log(`Contoh 1 cocok pola : ${isConfirmationRequest(contoh1) ? 'YA' : 'TIDAK'} (Hari: ${extractTargetDay(contoh1)})`);
+console.log(`Contoh 2 cocok pola : ${isConfirmationRequest(contoh2) ? 'YA' : 'TIDAK'} (Hari: ${extractTargetDay(contoh2)})`);

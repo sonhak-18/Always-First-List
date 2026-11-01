@@ -44,6 +44,12 @@ const DEFAULT_DICTIONARY = {
     'list bimbingan',
     'monggo',
   ],
+  confirmation_request: [
+    'mengajukan\\s+bimbingan',
+    'mohon\\s+izin\\s+bertanya.*bimbingan',
+    'apakah.*berkenan.*pukul\\s+berapa',
+    'bimbingan\\s+untuk\\s+(?:besok|hari\\s+\\w+)',
+  ],
 };
 
 let currentDictionary = null;

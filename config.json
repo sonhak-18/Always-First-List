@@ -5,8 +5,14 @@
     "rabu"
   ],
   "targetMode": "subsequent",
-  "members": [],
-  "cooldownMinutes": 5,
+  "members": [
+    "Fawaid",
+    "Jeremy",
+    "Christopher",
+    "Ratih"
+  ],
+  "cooldownMinutes": 15,
   "registeredSessionDate": null,
-  "stealMode": true
+  "stealMode": true,
+  "stealModeRequireConfirmation": false
 }

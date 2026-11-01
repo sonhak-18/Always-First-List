@@ -53,6 +53,21 @@ function extractTargetDay(text) {
   return null;
 }
 
+function isConfirmationRequest(text) {
+  if (!text || typeof text !== 'string') return false;
+  const dict = getDictionary();
+  const patterns = dict.confirmation_request || [
+    'mengajukan\\s+bimbingan',
+    'mohon\\s+izin\\s+bertanya.*bimbingan',
+    'apakah.*berkenan.*pukul\\s+berapa',
+    'bimbingan\\s+untuk\\s+(?:besok|hari\\s+\\w+)',
+  ];
+  return patterns.some((patternStr) => {
+    const regex = safeRegex(patternStr, 'is');
+    return regex && regex.test(text);
+  });
+}
+
 function analyzeMessage(text, options = {}) {
   if (!text || typeof text !== 'string') {
     return { shouldTrigger: false, action: 'empty', reason: 'Pesan kosong', targetDay: null, detectedKeywords: [] };
@@ -63,6 +78,9 @@ function analyzeMessage(text, options = {}) {
     baseDate = null,
     sessionDays = ['senin', 'rabu'],
     stealMode = false,
+    stealModeRequireConfirmation = false,
+    hasPrecedingConfirmation = false,
+    promptTargetDay = null,
   } = options;
 
   const cleanText = text.trim();
@@ -83,20 +101,75 @@ function analyzeMessage(text, options = {}) {
     }
   }
 
-  if (isRedirect && targetDay) {
+  // Determine the reference context date of the message
+  const contextDateObj = getContextDate(cleanText, baseDate, sessionDays);
+  const contextDateStr = contextDateObj.format('YYYY-MM-DD');
+  const contextDateFormatted = formatListingDate(contextDateObj);
+
+  const hasActiveSession = Boolean(registeredSessionDate) && !isDatePassed(registeredSessionDate, baseDate);
+  const isSameSession = hasActiveSession && (registeredSessionDate === contextDateStr);
+
+  // Steal Mode logic:
+  // If stealModeRequireConfirmation is enabled, Steal Mode only triggers if preceding student confirmation was detected.
+  const isStealArmed = stealMode && (!stealModeRequireConfirmation || hasPrecedingConfirmation);
+
+  if (isStealArmed) {
+    const finalTargetDay = targetDay || promptTargetDay || null;
+
+    if (isRedirect && targetDay) {
+      return {
+        shouldTrigger: true,
+        action: 'redirect',
+        reason: `[MODE MENCURI] Dosen mengalihkan bimbingan ke hari ${targetDay}`,
+        targetDay,
+        contextDate: contextDateStr,
+        contextDateFormatted,
+        detectedKeywords: ['Mode Mencuri', ...detectedKeywords],
+      };
+    }
+
+    let isSessionCancellation = false;
+    for (const patternStr of dict.cancellation || []) {
+      const regex = safeRegex(patternStr, 'i');
+      if (!regex) continue;
+      const match = cleanText.match(regex);
+      if (match) {
+        isSessionCancellation = true;
+        detectedKeywords.push(`Pembatalan Sesi: ${match[0]}`);
+        break;
+      }
+    }
+
+    if (isSessionCancellation) {
+      return {
+        shouldTrigger: true,
+        action: 'takeover',
+        reason: '[MODE MENCURI] Pembatalan sesi terdeteksi, langsung mengambil alih kuota sesi berikutnya!',
+        targetDay: null,
+        isCancellation: true,
+        contextDate: contextDateStr,
+        contextDateFormatted,
+        detectedKeywords: ['Mode Mencuri', ...detectedKeywords],
+      };
+    }
+
     return {
       shouldTrigger: true,
-      action: 'redirect',
-      reason: stealMode
-        ? `[MODE MENCURI] Dosen mengalihkan bimbingan ke hari ${targetDay}`
-        : `Dosen mengalihkan bimbingan ke hari ${targetDay}`,
-      targetDay,
-      detectedKeywords: stealMode ? ['Mode Mencuri', ...detectedKeywords] : detectedKeywords,
+      action: 'steal',
+      reason: stealModeRequireConfirmation
+        ? `Mode Mencuri: Dipicu setelah konfirmasi pengajuan mahasiswa terdeteksi${finalTargetDay ? ` (target: ${finalTargetDay})` : ''}`
+        : 'Mode Mencuri: Setiap chat dosen langsung memicu pengiriman list antrean (mencuri semua waktu)',
+      targetDay: finalTargetDay,
+      contextDate: contextDateStr,
+      contextDateFormatted,
+      detectedKeywords: stealModeRequireConfirmation
+        ? ['Mode Mencuri', 'Pengajuan Terkonfirmasi']
+        : ['Mode Mencuri'],
     };
   }
 
-  // Blacklist check is skipped in steal mode or if the lecturer explicitly redirected to an alternative day
-  if (!isRedirect && !stealMode) {
+  // Blacklist check is skipped if the lecturer explicitly redirected to an alternative day
+  if (!isRedirect) {
     for (const patternStr of dict.blacklist || []) {
       const regex = safeRegex(patternStr, 'i');
       if (!regex) continue;
@@ -113,14 +186,6 @@ function analyzeMessage(text, options = {}) {
     }
   }
 
-  // Determine the reference context date of the message
-  const contextDateObj = getContextDate(cleanText, baseDate, sessionDays);
-  const contextDateStr = contextDateObj.format('YYYY-MM-DD');
-  const contextDateFormatted = formatListingDate(contextDateObj);
-
-  const hasActiveSession = Boolean(registeredSessionDate) && !isDatePassed(registeredSessionDate, baseDate);
-  const isSameSession = hasActiveSession && (registeredSessionDate === contextDateStr);
-
   // Immediate session cancellation triggers listing for the subsequent cycle session
   let isSessionCancellation = false;
   for (const patternStr of dict.cancellation || []) {
@@ -135,7 +200,7 @@ function analyzeMessage(text, options = {}) {
   }
 
   if (isSessionCancellation) {
-    if (isSameSession && !stealMode) {
+    if (isSameSession) {
       return {
         shouldTrigger: true,
         action: 'takeover',
@@ -150,28 +215,13 @@ function analyzeMessage(text, options = {}) {
 
     return {
       shouldTrigger: true,
-      action: stealMode ? 'takeover' : 'cancellation_advance',
-      reason: stealMode
-        ? '[MODE MENCURI] Pembatalan sesi terdeteksi, langsung mengambil alih kuota sesi berikutnya!'
-        : 'Pembatalan sesi terdekat, membuka kuota sesi berikutnya!',
+      action: 'cancellation_advance',
+      reason: 'Pembatalan sesi terdekat, membuka kuota sesi berikutnya!',
       targetDay: null,
       isCancellation: true,
       contextDate: contextDateStr,
       contextDateFormatted,
-      detectedKeywords: stealMode ? ['Mode Mencuri', ...detectedKeywords] : detectedKeywords,
-    };
-  }
-
-  // Mode Mencuri: Setiap chat dosen langsung memicu pengiriman list antrean tanpa menunggu whitelist
-  if (stealMode) {
-    return {
-      shouldTrigger: true,
-      action: 'steal',
-      reason: 'Mode Mencuri: Setiap chat dosen langsung memicu pengiriman list antrean (mencuri semua waktu)',
-      targetDay,
-      contextDate: contextDateStr,
-      contextDateFormatted,
-      detectedKeywords: ['Mode Mencuri'],
+      detectedKeywords,
     };
   }
 
@@ -225,4 +275,5 @@ function analyzeMessage(text, options = {}) {
 module.exports = {
   analyzeMessage,
   extractTargetDay,
+  isConfirmationRequest,
 };

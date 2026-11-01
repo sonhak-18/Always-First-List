@@ -4,7 +4,7 @@ const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLat
 const pino = require('pino');
 const qrcode = require('qrcode-terminal');
 const fs = require('fs');
-const { analyzeMessage } = require('./rules');
+const { analyzeMessage, isConfirmationRequest, extractTargetDay } = require('./rules');
 const { generateListingText, getTargetDate, isDatePassed, formatListingDate } = require('./dateHelper');
 const { getConfig, updateConfig } = require('./config');
 const DashboardServer = require('./server');
@@ -21,6 +21,7 @@ const MEMBERS = (process.env.LISTING_MEMBERS || 'Nama 1, Nama 2, Nama 3')
   .filter(Boolean);
 
 let lastTriggerTime = 0;
+let lastConfirmationRequest = null;
 const dashboard = new DashboardServer(PORT, HOST);
 const authPath = path.resolve(__dirname, '../auth_info_baileys');
 const groupParticipantMap = new Map();
@@ -270,6 +271,24 @@ async function startBot() {
         const resolvedPhone = resolveSenderPhone(senderJid, groupJid);
         const isDosen = checkIsDosen(senderJid, groupJid, DOSEN_PHONE);
 
+        if (!isDosen) {
+          if (isConfirmationRequest(text)) {
+            const detectedDay = extractTargetDay(text);
+            lastConfirmationRequest = {
+              timestamp: Date.now(),
+              text,
+              sender: resolvedPhone,
+              targetDay: detectedDay,
+            };
+            dashboard.addSystemLog(
+              `[PENGAJUAN MAHASISWA] Terdeteksi pesan pengajuan bimbingan dari ${resolvedPhone}${detectedDay ? ` untuk hari ${detectedDay}` : ''}. Mode Mencuri kini siap terpicu saat dosen merespons.`,
+              'info'
+            );
+            dashboard.broadcast('confirmation_request_detected', lastConfirmationRequest);
+            console.log(`[PENGAJUAN] Terdeteksi dari ${resolvedPhone}${detectedDay ? ` (hari: ${detectedDay})` : ''}`);
+          }
+        }
+
         if (isDosen) {
           const tReceived = Date.now();
           const currentConfig = getConfig();
@@ -286,13 +305,34 @@ async function startBot() {
             : COOLDOWN_MINUTES;
           const elapsedMinutes = (tReceived - lastTriggerTime) / (1000 * 60);
 
+          let hasPrecedingConfirmation = false;
+          let promptTargetDay = null;
+          if (lastConfirmationRequest) {
+            if (Date.now() - lastConfirmationRequest.timestamp <= 24 * 60 * 60 * 1000) {
+              hasPrecedingConfirmation = true;
+              promptTargetDay = lastConfirmationRequest.targetDay;
+            } else {
+              lastConfirmationRequest = null;
+            }
+          }
+
           if (elapsedMinutes >= effectiveCooldown) {
             const analysis = analyzeMessage(text, {
               registeredSessionDate: currentConfig.registeredSessionDate,
               sessionDays: currentConfig.sessionDays,
               targetMode: currentConfig.targetMode,
               stealMode: currentConfig.stealMode,
+              stealModeRequireConfirmation: currentConfig.stealModeRequireConfirmation,
+              hasPrecedingConfirmation,
+              promptTargetDay,
             });
+
+            if (currentConfig.stealMode && currentConfig.stealModeRequireConfirmation && !hasPrecedingConfirmation && !analysis.shouldTrigger) {
+              dashboard.addSystemLog(
+                'Dosen mengirim chat, namun belum ada pesan pengajuan bimbingan dari mahasiswa sebelumnya. Mode Mencuri ditahan.',
+                'info'
+              );
+            }
 
             if (analysis.action === 'standby') {
               dashboard.addSystemLog(
@@ -345,6 +385,8 @@ async function startBot() {
                   const networkLatency = ackTime - sendStartTime;
                   const totalLatency = ackTime - tReceived;
                   lastTriggerTime = ackTime;
+                  lastConfirmationRequest = null;
+                  dashboard.broadcast('confirmation_request_consumed', null);
 
                   // Lock in registered session date to avoid re-triggering during H-1 confirmations
                   const updatedCfg = updateConfig({ registeredSessionDate: targetDateStr });
