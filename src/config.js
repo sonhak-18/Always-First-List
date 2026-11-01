@@ -21,6 +21,7 @@ const DEFAULT_CONFIG = {
   members: [],
   cooldownMinutes: parseInt(process.env.COOLDOWN_MINUTES || '15', 10),
   registeredSessionDate: null,
+  stealMode: false,
 };
 
 let currentConfig = null;
@@ -107,6 +108,9 @@ function sanitizeConfig(input) {
     clean.registeredSessionDate = null;
   } else if (typeof input.registeredSessionDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input.registeredSessionDate)) {
     clean.registeredSessionDate = input.registeredSessionDate;
+  }
+  if (typeof input.stealMode === 'boolean') {
+    clean.stealMode = input.stealMode;
   }
   return clean;
 }

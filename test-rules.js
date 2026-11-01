@@ -54,6 +54,25 @@ const testCases = [
     desc: 'Chat biasa di luar bimbingan',
     chat: 'Selamat pagi semuanya, laporan minggu lalu tolong dicek kembali.',
   },
+  {
+    desc: 'Mode Mencuri: Chat biasa dari dosen langsung mencuri kuota dan kirim list',
+    chat: 'Selamat pagi semuanya, apa kabar?',
+    options: {
+      stealMode: true,
+      registeredSessionDate: WEDNESDAY_SESSION,
+      baseDate: SIMULATED_BASE_DATE,
+      sessionDays: ['senin', 'rabu'],
+    },
+  },
+  {
+    desc: 'Mode Mencuri: Dosen mengalihkan hari (tetap mendeteksi hari target)',
+    chat: 'Saya bisanya hari rabu',
+    options: {
+      stealMode: true,
+      baseDate: SIMULATED_BASE_DATE,
+      sessionDays: ['senin', 'rabu'],
+    },
+  },
 ];
 
 console.log('SIMULASI ANALISIS PESAN DOSEN');

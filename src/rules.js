@@ -62,6 +62,7 @@ function analyzeMessage(text, options = {}) {
     registeredSessionDate = null,
     baseDate = null,
     sessionDays = ['senin', 'rabu'],
+    stealMode = false,
   } = options;
 
   const cleanText = text.trim();
@@ -86,14 +87,16 @@ function analyzeMessage(text, options = {}) {
     return {
       shouldTrigger: true,
       action: 'redirect',
-      reason: `Dosen mengalihkan bimbingan ke hari ${targetDay}`,
+      reason: stealMode
+        ? `[MODE MENCURI] Dosen mengalihkan bimbingan ke hari ${targetDay}`
+        : `Dosen mengalihkan bimbingan ke hari ${targetDay}`,
       targetDay,
-      detectedKeywords,
+      detectedKeywords: stealMode ? ['Mode Mencuri', ...detectedKeywords] : detectedKeywords,
     };
   }
 
-  // Blacklist check is skipped if the lecturer explicitly redirected to an alternative day
-  if (!isRedirect) {
+  // Blacklist check is skipped in steal mode or if the lecturer explicitly redirected to an alternative day
+  if (!isRedirect && !stealMode) {
     for (const patternStr of dict.blacklist || []) {
       const regex = safeRegex(patternStr, 'i');
       if (!regex) continue;
@@ -132,7 +135,7 @@ function analyzeMessage(text, options = {}) {
   }
 
   if (isSessionCancellation) {
-    if (isSameSession) {
+    if (isSameSession && !stealMode) {
       return {
         shouldTrigger: true,
         action: 'takeover',
@@ -147,13 +150,28 @@ function analyzeMessage(text, options = {}) {
 
     return {
       shouldTrigger: true,
-      action: 'cancellation_advance',
-      reason: 'Pembatalan sesi terdekat, membuka kuota sesi berikutnya!',
+      action: stealMode ? 'takeover' : 'cancellation_advance',
+      reason: stealMode
+        ? '[MODE MENCURI] Pembatalan sesi terdeteksi, langsung mengambil alih kuota sesi berikutnya!'
+        : 'Pembatalan sesi terdekat, membuka kuota sesi berikutnya!',
       targetDay: null,
       isCancellation: true,
       contextDate: contextDateStr,
       contextDateFormatted,
-      detectedKeywords,
+      detectedKeywords: stealMode ? ['Mode Mencuri', ...detectedKeywords] : detectedKeywords,
+    };
+  }
+
+  // Mode Mencuri: Setiap chat dosen langsung memicu pengiriman list antrean tanpa menunggu whitelist
+  if (stealMode) {
+    return {
+      shouldTrigger: true,
+      action: 'steal',
+      reason: 'Mode Mencuri: Setiap chat dosen langsung memicu pengiriman list antrean (mencuri semua waktu)',
+      targetDay,
+      contextDate: contextDateStr,
+      contextDateFormatted,
+      detectedKeywords: ['Mode Mencuri'],
     };
   }
 

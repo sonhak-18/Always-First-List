@@ -123,6 +123,8 @@ Bot tidak dibatasi hanya pada 2 hari sepekan. Sistem mendukung konfigurasi hari 
 - **3x sepekan atau lebih** (contoh: Senin, Rabu, & Jumat): Bot otomatis berputar maju secara sekuensial antar sesi yang aktif.
 
 ### Aturan Tambahan & Session Guard:
+- **Mode Mencuri (Curi Semua Waktu / Steal Mode)**:
+  Saat diaktifkan (`stealMode: true`), bot beralih ke mode agresif tanpa filter kata kunci: **setiap chat apa pun yang dikirimkan oleh dosen di grup sumber langsung memicu pengiriman list antrean ke grup target**. Mode ini mengabaikan syarat whitelist, melewati pengecekan blacklist, dan menonaktifkan status standby sesi terdaftar guna merebut setiap kuota yang tersedia. Jika dosen menyebutkan hari pengalihan spesifik (contoh: *"bisanya rabu"*), bot tetap menetapkan tanggal target listing ke hari tersebut. Mode ini dapat diaktifkan atau dinonaktifkan kapan saja melalui tombol saklar di Konsol Web.
 - **Session Guard (Anti-Dobel Kirim pada Konfirmasi H-1)**:
   Jika kelompok Anda sudah terdaftar pada sesi tertentu (`registeredSessionDate`, misal: Rabu, 28 Okt), dan pada H-1 dosen mengirim chat konfirmasi persetujuan kuota/jam untuk sesi tersebut, bot otomatis berstatus **STANDBY (DIAM)**. Bot tidak akan mengirim ulang format list dan tidak akan mencuri start untuk merebut kuota minggu depan.
 - **Takeover Otomatis saat Pembatalan Sesi Terdaftar**:

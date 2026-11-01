@@ -689,6 +689,9 @@
       <span style="color: var(--text-dim); font-size: 11px;">[Web Console]</span>
     </div>
     <div class="header-right">
+      <div id="stealModeMeta" class="status-tag" style="display: none; color: var(--amber); border-color: var(--amber); background: rgba(255, 171, 0, 0.08);">
+        <span>[CURI SEMUA WAKTU]</span>
+      </div>
       <div id="statusTag" class="status-tag offline">
         <span id="statusLabel">DISCONNECTED</span>
       </div>
@@ -743,7 +746,13 @@
         <div id="viewDictionary" class="tab-view">
           <!-- Interactive Sandbox -->
           <div class="sandbox-card">
-            <span style="font-weight: 600; font-size: 11px; color: var(--cyan);">Uji Pesan Dosen (Sandbox):</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+              <span style="font-weight: 600; font-size: 11px; color: var(--cyan);">Uji Pesan Dosen (Sandbox):</span>
+              <label style="display: inline-flex; align-items: center; gap: 5px; font-size: 10px; color: var(--amber); cursor: pointer;">
+                <input type="checkbox" id="sandboxStealMode" style="accent-color: var(--amber);" onchange="this.dataset.userTouched='1'; runSandboxTest();">
+                Simulasi Mode Mencuri
+              </label>
+            </div>
             <textarea id="sandboxInput" class="sandbox-textarea" placeholder="Ketik pesan dosen di sini (cth: Silahkan ya utk 6 mhs)..."></textarea>
             <button class="sandbox-btn" onclick="runSandboxTest()">Uji Pesan Ini</button>
             <div id="sandboxOutput" class="sandbox-output">Ketik pesan di atas lalu klik Uji Pesan Ini.</div>
@@ -805,6 +814,23 @@
         <!-- View 2: Schedule & Message Template Settings -->
         <div id="viewConfig" class="tab-view" style="display: none;">
           
+          <!-- Steal Mode Card -->
+          <div class="config-card" id="stealModeCard" style="border-left: 3px solid var(--amber);">
+            <div class="config-header">
+              <span style="color: var(--amber);">[MODE MENCURI (CURI SEMUA WAKTU)]</span>
+              <span id="stealModeBadge" class="status-tag offline">[NONAKTIF]</span>
+            </div>
+            <div class="config-desc">
+              Saat diaktifkan, bot berada dalam mode agresif: <strong>setiap beliau (dosen) mengirimkan chat apapun di grup</strong>, bot akan langsung mengirimkan list antrean tanpa menunggu kata kunci whitelist dan mengabaikan pembatasan sesi (mencuri semua waktu).
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px;">
+              <label class="mode-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; padding: 6px 10px;">
+                <input type="checkbox" id="stealModeCheckbox" onchange="handleStealModeToggle()" style="cursor: pointer; width: 15px; height: 15px; accent-color: var(--amber);">
+                <span style="font-weight: 600; font-size: 11px; color: var(--text-bright);">Aktifkan Mode Mencuri</span>
+              </label>
+            </div>
+          </div>
+
           <!-- Mode Selection Card -->
           <div class="config-card">
             <div class="config-header">
@@ -1148,6 +1174,10 @@
         currentConfig.registeredSessionDate = cfg.registeredSessionDate;
         renderRegisteredSessionStatus(cfg);
       }
+      if (cfg.stealMode !== undefined) {
+        currentConfig.stealMode = Boolean(cfg.stealMode);
+        renderStealModeStatus(cfg.stealMode);
+      }
       updateTemplatePreview();
     }
 
@@ -1305,6 +1335,8 @@
 
       const regInput = document.getElementById('registeredSessionInput');
       const regDate = regInput && regInput.value ? regInput.value : (currentConfig.registeredSessionDate || null);
+      const stealChk = document.getElementById('stealModeCheckbox');
+      const stealModeVal = stealChk ? stealChk.checked : Boolean(currentConfig.stealMode);
 
       const payload = {
         sessionDays: selectedDays,
@@ -1313,6 +1345,7 @@
         members: membersList,
         cooldownMinutes: !isNaN(cooldownVal) && cooldownVal > 0 ? cooldownVal : 15,
         registeredSessionDate: regDate,
+        stealMode: stealModeVal,
       };
 
       if (ws && ws.readyState === WebSocket.OPEN) {
@@ -1345,6 +1378,52 @@
         badge.textContent = '[BELUM TERDAFTAR]';
         badge.style.color = 'var(--text-dim)';
       }
+    }
+
+    function renderStealModeStatus(isSteal) {
+      const chk = document.getElementById('stealModeCheckbox');
+      const badge = document.getElementById('stealModeBadge');
+      const card = document.getElementById('stealModeCard');
+      const meta = document.getElementById('stealModeMeta');
+      const sbChk = document.getElementById('sandboxStealMode');
+
+      if (chk) chk.checked = Boolean(isSteal);
+      if (sbChk && !sbChk.dataset.userTouched) sbChk.checked = Boolean(isSteal);
+
+      if (isSteal) {
+        if (badge) {
+          badge.textContent = '[AKTIF]';
+          badge.className = 'status-tag';
+          badge.style.color = 'var(--amber)';
+          badge.style.borderColor = 'var(--amber)';
+          badge.style.background = 'rgba(255, 171, 0, 0.12)';
+        }
+        if (card) {
+          card.style.borderColor = 'var(--amber)';
+          card.style.background = 'rgba(255, 171, 0, 0.03)';
+        }
+        if (meta) meta.style.display = 'inline-flex';
+      } else {
+        if (badge) {
+          badge.textContent = '[NONAKTIF]';
+          badge.className = 'status-tag offline';
+          badge.style.color = 'var(--text-dim)';
+          badge.style.borderColor = 'var(--border)';
+          badge.style.background = 'transparent';
+        }
+        if (card) {
+          card.style.borderColor = 'var(--border)';
+          card.style.background = 'transparent';
+        }
+        if (meta) meta.style.display = 'none';
+      }
+    }
+
+    function handleStealModeToggle() {
+      const chk = document.getElementById('stealModeCheckbox');
+      const isSteal = chk ? chk.checked : false;
+      renderStealModeStatus(isSteal);
+      saveConfigToServer();
     }
 
     function setSessionRelative(daysAhead) {
@@ -1608,12 +1687,16 @@
       const val = textarea.value.trim();
       if (!val) return;
 
+      const sbChk = document.getElementById('sandboxStealMode');
+      const stealModeVal = sbChk ? sbChk.checked : Boolean(currentConfig.stealMode);
+
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
           type: 'test_chat',
           data: {
             text: val,
             registeredSessionDate: currentConfig.registeredSessionDate || null,
+            stealMode: stealModeVal,
           }
         }));
       }
@@ -1625,7 +1708,9 @@
       let out = `[UJI] "${text}"\n`;
 
       let statusTag = '[IGNORE] TIDAK MEMICU (DIABAIKAN)';
-      if (analysis.action === 'standby') {
+      if (analysis.action === 'steal') {
+        statusTag = '[CURI SEMUA WAKTU] MODE MENCURI (LANGSUNG KIRIM LIST)';
+      } else if (analysis.action === 'standby') {
         statusTag = '[STANDBY] DITAHAN (KELOMPOK SUDAH TERDAFTAR)';
       } else if (analysis.action === 'takeover') {
         statusTag = '[TAKEOVER] PEMBATALAN SESI (MEREBUT SESI BERIKUTNYA)';

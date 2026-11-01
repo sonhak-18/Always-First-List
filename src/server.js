@@ -167,6 +167,7 @@ class DashboardServer extends EventEmitter {
         registeredSessionDate: data.registeredSessionDate !== undefined ? data.registeredSessionDate : config.registeredSessionDate,
         sessionDays: config.sessionDays,
         targetMode: config.targetMode,
+        stealMode: data.stealMode !== undefined ? data.stealMode : config.stealMode,
       });
       const members = (Array.isArray(config.members) && config.members.length > 0)
         ? config.members

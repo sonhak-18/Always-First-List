@@ -291,6 +291,7 @@ async function startBot() {
               registeredSessionDate: currentConfig.registeredSessionDate,
               sessionDays: currentConfig.sessionDays,
               targetMode: currentConfig.targetMode,
+              stealMode: currentConfig.stealMode,
             });
 
             if (analysis.action === 'standby') {
@@ -360,11 +361,14 @@ async function startBot() {
                     networkLatency,
                     action: analysis.action,
                   });
+                  const actionLabel = analysis.action === 'steal'
+                    ? 'MENCURI'
+                    : (analysis.action === 'takeover' ? 'TAKEOVER' : 'SUCCESS');
                   dashboard.addSystemLog(
-                    `[${analysis.action === 'takeover' ? 'TAKEOVER' : 'SUCCESS'}] Listing untuk ${formatListingDate(targetDateObj)} berhasil terkirim ke ${targetJid} (Total: ${totalLatency}ms, Internal: ${internalLatency}ms, WA Ack: ${networkLatency}ms)`,
+                    `[${actionLabel}] Listing untuk ${formatListingDate(targetDateObj)} berhasil terkirim ke ${targetJid} (Total: ${totalLatency}ms, Internal: ${internalLatency}ms, WA Ack: ${networkLatency}ms)`,
                     'success'
                   );
-                  console.log(`[SUCCESS] Listing terkirim ke ${targetJid} dalam ${totalLatency}ms (Internal: ${internalLatency}ms, WA Ack: ${networkLatency}ms)`);
+                  console.log(`[${actionLabel}] Listing terkirim ke ${targetJid} dalam ${totalLatency}ms (Internal: ${internalLatency}ms, WA Ack: ${networkLatency}ms)`);
                 }).catch((err) => {
                   console.error('[ERROR] Gagal mengirim listing:', err);
                 });
