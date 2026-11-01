@@ -1,5 +1,7 @@
+const path = require('path');
 const dayjs = require('dayjs');
 require('dayjs/locale/id');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 dayjs.locale('id');
 
@@ -126,22 +128,33 @@ function formatListingDate(dateObj) {
   return `${capitalizedDay}, ${dateObj.format('DD MMMM YYYY')}`;
 }
 
+function getDefaultListingMembers() {
+  if (process.env.LISTING_MEMBERS) {
+    const parsed = process.env.LISTING_MEMBERS.split(',').map(m => m.trim()).filter(Boolean);
+    if (parsed.length > 0) return parsed;
+  }
+  return ['Nama 1', 'Nama 2', 'Nama 3'];
+}
+
 function generateListingText(
   specifiedDay = null,
-  members = ['Nama 1', 'Nama 2', 'Nama 3'],
+  members = null,
   baseDate = null,
   template = null,
   sessionDays = ['senin', 'rabu'],
   targetMode = 'subsequent',
   isCancellation = false
 ) {
+  const activeMembers = (Array.isArray(members) && members.length > 0)
+    ? members
+    : getDefaultListingMembers();
   const targetDate = getTargetDate(specifiedDay, baseDate, sessionDays, targetMode, isCancellation);
   const formattedDate = formatListingDate(targetDate);
   const dayName = targetDate.format('dddd');
   const capitalizedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1);
 
-  const formattedMembers = members.map((name, idx) => `${idx + 1}. ${name}`).join('\n');
-  const rawMembers = members.join(', ');
+  const formattedMembers = activeMembers.map((name, idx) => `${idx + 1}. ${name}`).join('\n');
+  const rawMembers = activeMembers.join(', ');
 
   const defaultTemplate = 'List bimbingan {date}:\n{members}';
   let effectiveTemplate = (template && template.trim()) ? template : defaultTemplate;

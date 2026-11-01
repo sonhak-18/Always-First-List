@@ -785,12 +785,15 @@
               Atur urutan nama anggota tim yang didaftarkan ke slot kuota dan batas jeda antar chat:
             </div>
             <div class="form-field">
-              <label class="form-label" for="membersInput">Daftar Anggota Tim (dipisahkan koma):</label>
-              <input type="text" id="membersInput" class="form-input" oninput="handleMembersChange()" placeholder="Nama anggota dari .env">
+              <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                <label class="form-label" for="membersInput">Daftar Anggota Tim (dipisahkan koma):</label>
+                <span id="envMembersBadge" style="font-size: 10px; color: var(--cyan); font-weight: 600;"></span>
+              </div>
+              <input type="text" id="membersInput" class="form-input" autocomplete="off" oninput="handleMembersChange()" placeholder="Nama anggota dari .env">
             </div>
             <div class="form-field" style="margin-top: 4px;">
               <label class="form-label" for="cooldownInput">Jeda Waktu Antispam (Menit):</label>
-              <input type="number" id="cooldownInput" min="1" max="180" class="form-input" oninput="handleConfigChange()" placeholder="15" style="max-width: 140px;">
+              <input type="number" id="cooldownInput" min="1" max="180" class="form-input" autocomplete="off" oninput="handleConfigChange()" placeholder="15" style="max-width: 140px;">
             </div>
           </div>
 
@@ -858,6 +861,17 @@
     let selectedDays = ['senin', 'rabu'];
     let currentMembers = [];
 
+    function isPlaceholderMembers(list) {
+      if (!Array.isArray(list) || list.length === 0) return true;
+      return list.every((m, idx) => typeof m === 'string' && m.trim().toLowerCase() === `nama ${idx + 1}`);
+    }
+
+    function isPlaceholderMembersText(text) {
+      if (!text || typeof text !== 'string') return true;
+      const parts = text.split(',').map(m => m.trim()).filter(Boolean);
+      return isPlaceholderMembers(parts);
+    }
+
     async function loadInitialData() {
       try {
         const res = await fetch('/api/state');
@@ -866,8 +880,8 @@
           if (payload.dictionary) renderDictionary(payload.dictionary);
           if (payload.state) {
             applyState(payload.state);
-            if (payload.state.members && payload.state.members.length) {
-              currentMembers = payload.state.members;
+            if (payload.state.members && payload.state.members.length && (currentMembers.length === 0 || isPlaceholderMembers(currentMembers))) {
+              currentMembers = [...payload.state.members];
             }
           }
           if (payload.config) applyConfig(payload.config);
@@ -910,8 +924,8 @@
         if (data.dictionary) renderDictionary(data.dictionary);
         if (data.state) {
           applyState(data.state);
-          if (data.state.members && data.state.members.length) {
-            currentMembers = data.state.members;
+          if (data.state.members && data.state.members.length && (currentMembers.length === 0 || isPlaceholderMembers(currentMembers))) {
+            currentMembers = [...data.state.members];
           }
         }
         if (data.config) applyConfig(data.config);
@@ -920,9 +934,13 @@
       } else if (type === 'state_update') {
         applyState(data);
         if (data.members && data.members.length) {
-          currentMembers = data.members;
+          if (currentMembers.length === 0 || isPlaceholderMembers(currentMembers)) {
+            currentMembers = [...data.members];
+          }
           const mInput = document.getElementById('membersInput');
-          if (mInput && !mInput.value) mInput.value = data.members.join(', ');
+          if (mInput && (!mInput.value.trim() || isPlaceholderMembersText(mInput.value))) {
+            mInput.value = data.members.join(', ');
+          }
           updateTemplatePreview();
         }
       } else if (type === 'dictionary_updated') {
@@ -1015,13 +1033,14 @@
         const tplInput = document.getElementById('templateInput');
         if (tplInput) tplInput.value = cfg.messageTemplate;
       }
-      if (cfg.members && Array.isArray(cfg.members) && cfg.members.length > 0) {
+      if (cfg.members && Array.isArray(cfg.members) && cfg.members.length > 0 && !isPlaceholderMembers(cfg.members)) {
         currentMembers = [...cfg.members];
-        const mInput = document.getElementById('membersInput');
-        if (mInput) mInput.value = cfg.members.join(', ');
-      } else if (currentMembers.length) {
-        const mInput = document.getElementById('membersInput');
-        if (mInput && !mInput.value) mInput.value = currentMembers.join(', ');
+      }
+      const mInput = document.getElementById('membersInput');
+      if (mInput) {
+        if (!mInput.value.trim() || isPlaceholderMembersText(mInput.value)) {
+          mInput.value = currentMembers.join(', ');
+        }
       }
       if (cfg.cooldownMinutes !== undefined) {
         const cdInput = document.getElementById('cooldownInput');
@@ -1037,8 +1056,10 @@
     function handleMembersChange() {
       const input = document.getElementById('membersInput');
       const raw = input.value.trim();
-      if (raw) {
+      if (raw && !isPlaceholderMembersText(raw)) {
         currentMembers = raw.split(',').map(m => m.trim()).filter(Boolean);
+      } else if (currentConfig.members && currentConfig.members.length > 0 && !isPlaceholderMembers(currentConfig.members)) {
+        currentMembers = [...currentConfig.members];
       }
       updateTemplatePreview();
       handleConfigChange();
@@ -1180,7 +1201,7 @@
         return;
       }
 
-      const membersList = membersRaw
+      const membersList = (membersRaw && !isPlaceholderMembersText(membersRaw))
         ? membersRaw.split(',').map(m => m.trim()).filter(Boolean)
         : currentMembers;
 
@@ -1298,6 +1319,18 @@
 
       document.getElementById('dosenMeta').textContent = `dosen: ${state.dosenPhone || 'unset'}`;
       document.getElementById('cooldownMeta').textContent = `cooldown: ${state.cooldownMinutes}m`;
+
+      if (state.members && Array.isArray(state.members) && state.members.length > 0) {
+        const badge = document.getElementById('envMembersBadge');
+        if (badge) badge.textContent = `[.env: ${state.members.join(', ')}]`;
+        if (currentMembers.length === 0 || isPlaceholderMembers(currentMembers)) {
+          currentMembers = [...state.members];
+          const mInput = document.getElementById('membersInput');
+          if (mInput && (!mInput.value.trim() || isPlaceholderMembersText(mInput.value))) {
+            mInput.value = state.members.join(', ');
+          }
+        }
+      }
     }
 
     function updateStatus(mode, label) {

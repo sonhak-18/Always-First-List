@@ -109,7 +109,17 @@ class DashboardServer {
 
   setupRoutes() {
     this.app.use(express.json());
-    this.app.use(express.static(path.resolve(__dirname, '../public')));
+    this.app.use((req, res, next) => {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      next();
+    });
+    this.app.use(express.static(path.resolve(__dirname, '../public'), {
+      etag: false,
+      lastModified: false,
+      maxAge: 0,
+    }));
 
     this.app.get('/api/state', (req, res) => {
       res.json({
