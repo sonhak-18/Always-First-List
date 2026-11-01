@@ -7,6 +7,7 @@
     "start": "node scripts/autostart.js stop && node src/index.js",
     "clean": "node -e \"const fs=require('fs'); fs.rmSync('auth_info_baileys', {recursive:true, force:true}); console.log('Session dibersihkan.');\"",
     "test:rules": "node test-rules.js",
+    "benchmark": "node scripts/benchmark.js",
     "autostart:on": "node scripts/autostart.js enable",
     "autostart:off": "node scripts/autostart.js disable",
     "bg:start": "node scripts/autostart.js start",
