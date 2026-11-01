@@ -1,4 +1,5 @@
 const { getDictionary } = require('./dictionary');
+const { getContextDate, formatListingDate, isDatePassed } = require('./dateHelper');
 
 const DAYS_LIST = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
 
@@ -52,10 +53,16 @@ function extractTargetDay(text) {
   return null;
 }
 
-function analyzeMessage(text) {
+function analyzeMessage(text, options = {}) {
   if (!text || typeof text !== 'string') {
-    return { shouldTrigger: false, reason: 'Pesan kosong', targetDay: null, detectedKeywords: [] };
+    return { shouldTrigger: false, action: 'empty', reason: 'Pesan kosong', targetDay: null, detectedKeywords: [] };
   }
+
+  const {
+    registeredSessionDate = null,
+    baseDate = null,
+    sessionDays = ['senin', 'rabu'],
+  } = options;
 
   const cleanText = text.trim();
   const detectedKeywords = [];
@@ -78,6 +85,7 @@ function analyzeMessage(text) {
   if (isRedirect && targetDay) {
     return {
       shouldTrigger: true,
+      action: 'redirect',
       reason: `Dosen mengalihkan bimbingan ke hari ${targetDay}`,
       targetDay,
       detectedKeywords,
@@ -93,6 +101,7 @@ function analyzeMessage(text) {
         const match = cleanText.match(regex);
         return {
           shouldTrigger: false,
+          action: 'blacklist',
           reason: `Terkena Blacklist (${patternStr}) - Dosen berhalangan panjang`,
           targetDay: null,
           detectedKeywords: match ? [match[0]] : [patternStr],
@@ -100,6 +109,14 @@ function analyzeMessage(text) {
       }
     }
   }
+
+  // Determine the reference context date of the message
+  const contextDateObj = getContextDate(cleanText, baseDate, sessionDays);
+  const contextDateStr = contextDateObj.format('YYYY-MM-DD');
+  const contextDateFormatted = formatListingDate(contextDateObj);
+
+  const hasActiveSession = Boolean(registeredSessionDate) && !isDatePassed(registeredSessionDate, baseDate);
+  const isSameSession = hasActiveSession && (registeredSessionDate === contextDateStr);
 
   // Immediate session cancellation triggers listing for the subsequent cycle session
   let isSessionCancellation = false;
@@ -115,11 +132,27 @@ function analyzeMessage(text) {
   }
 
   if (isSessionCancellation) {
+    if (isSameSession) {
+      return {
+        shouldTrigger: true,
+        action: 'takeover',
+        reason: `Sesi terdaftar kita (${contextDateFormatted}) dibatalkan dosen. Langsung mengambil alih kuota sesi berikutnya!`,
+        targetDay: null,
+        isCancellation: true,
+        contextDate: contextDateStr,
+        contextDateFormatted,
+        detectedKeywords,
+      };
+    }
+
     return {
       shouldTrigger: true,
+      action: 'cancellation_advance',
       reason: 'Pembatalan sesi terdekat, membuka kuota sesi berikutnya!',
       targetDay: null,
       isCancellation: true,
+      contextDate: contextDateStr,
+      contextDateFormatted,
       detectedKeywords,
     };
   }
@@ -136,18 +169,38 @@ function analyzeMessage(text) {
   }
 
   if (matchedWhitelist || isRedirect) {
+    if (isSameSession) {
+      // Dosen is confirming the exact session we are ALREADY registered for!
+      // Suppress / Standby to avoid sending a duplicate list or prematurely stealing subsequent cycle
+      return {
+        shouldTrigger: false,
+        action: 'standby',
+        reason: `Dosen mengonfirmasi bimbingan untuk sesi yang sudah kita daftarkan (${contextDateFormatted}). Menahan pengiriman list (STANDBY).`,
+        targetDay: null,
+        contextDate: contextDateStr,
+        contextDateFormatted,
+        detectedKeywords,
+      };
+    }
+
     return {
       shouldTrigger: true,
+      action: 'normal',
       reason: 'Pesan lolos filter & sesuai whitelist!',
       targetDay,
+      contextDate: contextDateStr,
+      contextDateFormatted,
       detectedKeywords,
     };
   }
 
   return {
     shouldTrigger: false,
+    action: 'ignored',
     reason: 'Pesan tidak mengandung kata kunci jadwal / bimbingan (diabaikan)',
     targetDay: null,
+    contextDate: contextDateStr,
+    contextDateFormatted,
     detectedKeywords: [],
   };
 }

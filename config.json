@@ -10,5 +10,6 @@
     "Nama 2",
     "Nama 3"
   ],
-  "cooldownMinutes": 15
+  "cooldownMinutes": 15,
+  "registeredSessionDate": null
 }

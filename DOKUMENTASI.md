@@ -122,10 +122,13 @@ Bot tidak dibatasi hanya pada 2 hari sepekan. Sistem mendukung konfigurasi hari 
 - **2x sepekan** (contoh: Senin & Rabu, atau Selasa & Kamis).
 - **3x sepekan atau lebih** (contoh: Senin, Rabu, & Jumat): Bot otomatis berputar maju secara sekuensial antar sesi yang aktif.
 
-### Aturan Tambahan:
+### Aturan Tambahan & Session Guard:
+- **Session Guard (Anti-Dobel Kirim pada Konfirmasi H-1)**:
+  Jika kelompok Anda sudah terdaftar pada sesi tertentu (`registeredSessionDate`, misal: Rabu, 28 Okt), dan pada H-1 dosen mengirim chat konfirmasi persetujuan kuota/jam untuk sesi tersebut, bot otomatis berstatus **STANDBY (DIAM)**. Bot tidak akan mengirim ulang format list dan tidak akan mencuri start untuk merebut kuota minggu depan.
+- **Takeover Otomatis saat Pembatalan Sesi Terdaftar**:
+  Jika dosen mengumumkan pembatalan untuk tanggal sesi yang sedang Anda pegang (contoh: *"Besok saya tidak bisa bimbingan"*), kuota sesi tersebut dianggap gugur. Bot seketika melakukan **TAKEOVER** dengan mengirimkan format antrean untuk jadwal bimbingan resmi berikutnya.
 - **Pengalihan Jadwal (Redirect)**: Jika dosen mengirim pesan semacam *"Senin nggak bisa, bisanya rabu ya"*, mesin aturan mendeteksi pola kata kunci pengalihan dan menetapkan target bimbingan ke hari spesifik yang ditunjuk dosen terlepas dari mode yang aktif.
-- **Pembatalan Sesi Terdekat (Cancellation)**: Jika dosen mengumumkan pembatalan untuk sesi terdekat (contoh: *"Besok saya tidak bisa bimbingan"*), bot tidak mengabaikan pesan tersebut, melainkan langsung membuka dan mengirimkan format antrean untuk jadwal berikutnya agar slot tetap terkunci lebih awal.
-- **Dosen Berhalangan Panjang (Blacklist)**: Jika dosen mengumumkan tugas luar kota atau libur panjang (contoh: *"Besok sampai minggu depan saya ada penugasan luar kota"*), pesan diblokir oleh blacklist sehingga bot tidak mengirim pesan apa pun.
+- **Dosen Berhalangan Panjang (Blacklist)**: Jika dosen mengumumkan tugas luar kota atau libur panjang (contoh: *"Besok sampai minggu depan saya ada penugasan luar kota"*), pesan diblokir oleh blacklist sehingga bot tidak mengirim pesan apa pun dan tidak melakukan takeover.
 
 ---
 

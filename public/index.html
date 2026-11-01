@@ -814,8 +814,25 @@
 
             <div class="form-label" style="margin-top: 4px;">Pratinjau Hasil Pesan:</div>
             <div id="templatePreview" class="preview-box"></div>
+          </div>
 
-            <div class="btn-save-row">
+          <!-- Registered Session Guard Card -->
+          <div class="config-card">
+            <div class="config-header">
+              <span>[5. GUARD SESI TERDAFTAR (ANTI-DOBEL &amp; TAKEOVER)]</span>
+              <span id="registeredStatusBadge" style="font-size: 10px; font-weight: 700; color: var(--text-dim);">[BELUM TERDAFTAR]</span>
+            </div>
+            <div class="config-desc">
+              Kunci tanggal sesi yang saat ini sudah didaftarkan kelompokmu. Saat dosen mengonfirmasi jadwal H-1 untuk tanggal ini, bot otomatis <strong>STANDBY (DIAM)</strong> agar tidak dobel kirim atau mencuri start minggu depan. Jika dosen membatalkan sesi ini, bot otomatis <strong>TAKEOVER</strong> sesi berikutnya.
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px;">
+              <input type="date" id="registeredSessionInput" class="form-input" style="max-width: 150px;" onchange="handleRegisteredSessionChange()">
+              <button type="button" class="token-btn" onclick="setSessionRelative(0)">Hari Ini</button>
+              <button type="button" class="token-btn" onclick="setSessionRelative(1)">Besok</button>
+              <button type="button" class="token-btn" style="color: var(--amber); border-color: var(--border);" onclick="clearRegisteredSession()">Reset / Kosongkan</button>
+            </div>
+
+            <div class="btn-save-row" style="margin-top: 12px;">
               <button type="button" class="btn-primary" onclick="saveConfigToServer()">Simpan Pengaturan</button>
               <span id="saveStatus" class="status-msg"></span>
             </div>
@@ -1010,6 +1027,10 @@
         const cdInput = document.getElementById('cooldownInput');
         if (cdInput) cdInput.value = cfg.cooldownMinutes;
       }
+      if (cfg.registeredSessionDate !== undefined) {
+        currentConfig.registeredSessionDate = cfg.registeredSessionDate;
+        renderRegisteredSessionStatus(cfg);
+      }
       updateTemplatePreview();
     }
 
@@ -1163,12 +1184,16 @@
         ? membersRaw.split(',').map(m => m.trim()).filter(Boolean)
         : currentMembers;
 
+      const regInput = document.getElementById('registeredSessionInput');
+      const regDate = regInput && regInput.value ? regInput.value : (currentConfig.registeredSessionDate || null);
+
       const payload = {
         sessionDays: selectedDays,
         targetMode,
         messageTemplate: template,
         members: membersList,
-        cooldownMinutes: !isNaN(cooldownVal) && cooldownVal > 0 ? cooldownVal : 15
+        cooldownMinutes: !isNaN(cooldownVal) && cooldownVal > 0 ? cooldownVal : 15,
+        registeredSessionDate: regDate,
       };
 
       if (ws && ws.readyState === WebSocket.OPEN) {
@@ -1185,6 +1210,48 @@
       } else {
         alert('Koneksi WebSocket terputus. Tidak dapat menyimpan.');
       }
+    }
+
+    function renderRegisteredSessionStatus(cfg) {
+      const badge = document.getElementById('registeredStatusBadge');
+      const input = document.getElementById('registeredSessionInput');
+      if (!badge || !input) return;
+
+      if (cfg && cfg.registeredSessionDate) {
+        input.value = cfg.registeredSessionDate;
+        badge.textContent = `[TERDAFTAR: ${cfg.registeredSessionDate}]`;
+        badge.style.color = 'var(--cyan)';
+      } else {
+        input.value = '';
+        badge.textContent = '[BELUM TERDAFTAR]';
+        badge.style.color = 'var(--text-dim)';
+      }
+    }
+
+    function setSessionRelative(daysAhead) {
+      const d = new Date();
+      d.setDate(d.getDate() + daysAhead);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const iso = `${year}-${month}-${day}`;
+      const input = document.getElementById('registeredSessionInput');
+      if (input) input.value = iso;
+      handleRegisteredSessionChange();
+    }
+
+    function clearRegisteredSession() {
+      const input = document.getElementById('registeredSessionInput');
+      if (input) input.value = '';
+      handleRegisteredSessionChange();
+    }
+
+    function handleRegisteredSessionChange() {
+      const input = document.getElementById('registeredSessionInput');
+      const val = input ? input.value : '';
+      currentConfig.registeredSessionDate = val || null;
+      renderRegisteredSessionStatus(currentConfig);
+      saveConfigToServer();
     }
 
     function renderAllLogs(data) {
@@ -1413,7 +1480,10 @@
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
           type: 'test_chat',
-          data: { text: val }
+          data: {
+            text: val,
+            registeredSessionDate: currentConfig.registeredSessionDate || null,
+          }
         }));
       }
     }
@@ -1422,8 +1492,21 @@
       const box = document.getElementById('sandboxOutput');
       const { analysis, preview, text } = data;
       let out = `[UJI] "${text}"\n`;
-      out += `Status  : ${analysis.shouldTrigger ? '[MATCH] LOLOS (KIRIM LISTING)' : '[IGNORE] TIDAK MEMICU (DIABAIKAN)'}\n`;
+
+      let statusTag = '[IGNORE] TIDAK MEMICU (DIABAIKAN)';
+      if (analysis.action === 'standby') {
+        statusTag = '[STANDBY] DITAHAN (KELOMPOK SUDAH TERDAFTAR)';
+      } else if (analysis.action === 'takeover') {
+        statusTag = '[TAKEOVER] PEMBATALAN SESI (MEREBUT SESI BERIKUTNYA)';
+      } else if (analysis.shouldTrigger) {
+        statusTag = '[MATCH] LOLOS (KIRIM LISTING)';
+      }
+
+      out += `Status  : ${statusTag}\n`;
       out += `Alasan  : ${analysis.reason}\n`;
+      if (analysis.contextDateFormatted) {
+        out += `Konteks : ${analysis.contextDateFormatted}\n`;
+      }
       if (analysis.detectedKeywords?.length) out += `Keyword : ${analysis.detectedKeywords.join(', ')}\n`;
       if (preview) out += `\n${preview}\n`;
       box.textContent = out;

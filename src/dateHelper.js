@@ -158,10 +158,41 @@ function generateListingText(
     .replace(/{members_raw}/g, rawMembers);
 }
 
+function getContextDate(text = '', baseDate = null, sessionDays = ['senin', 'rabu']) {
+  const now = baseDate ? dayjs(baseDate) : dayjs();
+  const clean = (text || '').toLowerCase();
+
+  if (/\bbesok\b/i.test(clean)) {
+    return now.add(1, 'day');
+  }
+
+  if (/\bhari\s+ini\b/i.test(clean)) {
+    return now;
+  }
+
+  for (const day of DAYS_LIST) {
+    const isNegated = new RegExp(`(?:nggak|tidak|tdk|bukan|batal)\\s+(?:hari\\s+)?${day}`, 'i').test(clean);
+    if (clean.includes(day) && !isNegated) {
+      return getTargetDate(day, now, sessionDays, 'immediate');
+    }
+  }
+
+  return getTargetDate(null, now, sessionDays, 'immediate');
+}
+
+function isDatePassed(dateStr, baseDate = null) {
+  if (!dateStr || typeof dateStr !== 'string') return true;
+  const now = baseDate ? dayjs(baseDate) : dayjs();
+  const sessionEnd = dayjs(dateStr).endOf('day');
+  return now.isAfter(sessionEnd);
+}
+
 module.exports = {
   getTargetDate,
   formatListingDate,
   generateListingText,
+  getContextDate,
+  isDatePassed,
   DAYS_MAP,
   DAYS_LIST,
 };

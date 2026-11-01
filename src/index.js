@@ -5,8 +5,8 @@ const pino = require('pino');
 const qrcode = require('qrcode-terminal');
 const fs = require('fs');
 const { analyzeMessage } = require('./rules');
-const { generateListingText } = require('./dateHelper');
-const { getConfig } = require('./config');
+const { generateListingText, getTargetDate, isDatePassed, formatListingDate } = require('./dateHelper');
+const { getConfig, updateConfig } = require('./config');
 const DashboardServer = require('./server');
 
 const DOSEN_PHONE = (process.env.DOSEN_PHONE || '').replace(/[^0-9]/g, '');
@@ -214,25 +214,54 @@ async function startBot() {
         if (isDosen) {
           const now = Date.now();
           const botConfig = getConfig();
-          const effectiveCooldown = (typeof botConfig.cooldownMinutes === 'number' && botConfig.cooldownMinutes > 0)
-            ? botConfig.cooldownMinutes
+
+          // Auto-expire past registered session date
+          if (botConfig.registeredSessionDate && isDatePassed(botConfig.registeredSessionDate)) {
+            updateConfig({ registeredSessionDate: null });
+            dashboard.broadcast('config_updated', getConfig());
+            dashboard.addSystemLog('Sesi bimbingan sebelumnya telah selesai. Status pendaftaran direset otomatis.', 'info');
+          }
+
+          const currentConfig = getConfig();
+          const effectiveCooldown = (typeof currentConfig.cooldownMinutes === 'number' && currentConfig.cooldownMinutes > 0)
+            ? currentConfig.cooldownMinutes
             : COOLDOWN_MINUTES;
           const elapsedMinutes = (now - lastTriggerTime) / (1000 * 60);
 
           if (elapsedMinutes >= effectiveCooldown) {
-            const analysis = analyzeMessage(text);
-            if (analysis.shouldTrigger) {
-              const effectiveMembers = (Array.isArray(botConfig.members) && botConfig.members.length > 0)
-                ? botConfig.members
+            const analysis = analyzeMessage(text, {
+              registeredSessionDate: currentConfig.registeredSessionDate,
+              sessionDays: currentConfig.sessionDays,
+              targetMode: currentConfig.targetMode,
+            });
+
+            if (analysis.action === 'standby') {
+              dashboard.addSystemLog(
+                `[STANDBY] Dosen mengonfirmasi bimbingan untuk sesi ${analysis.contextDateFormatted || ''}. Kelompok kita sudah terdaftar. Menahan pengiriman list.`,
+                'info'
+              );
+              console.log(`[STANDBY] ${analysis.reason}`);
+            } else if (analysis.shouldTrigger) {
+              const effectiveMembers = (Array.isArray(currentConfig.members) && currentConfig.members.length > 0)
+                ? currentConfig.members
                 : MEMBERS;
+
+              const targetDateObj = getTargetDate(
+                analysis.targetDay,
+                null,
+                currentConfig.sessionDays,
+                currentConfig.targetMode,
+                analysis.isCancellation
+              );
+              const targetDateStr = targetDateObj.format('YYYY-MM-DD');
 
               const listingMessage = generateListingText(
                 analysis.targetDay,
                 effectiveMembers,
                 null,
-                botConfig.messageTemplate,
-                botConfig.sessionDays,
-                botConfig.targetMode,
+                currentConfig.messageTemplate,
+                currentConfig.sessionDays,
+                currentConfig.targetMode,
                 analysis.isCancellation
               );
               const targetJid = TARGET_GROUP_JID;
@@ -244,13 +273,22 @@ async function startBot() {
                   const latency = Date.now() - sendStartTime;
                   lastTriggerTime = Date.now();
 
+                  // Lock in registered session date to avoid re-triggering during H-1 confirmations
+                  const updatedCfg = updateConfig({ registeredSessionDate: targetDateStr });
+                  dashboard.broadcast('config_updated', updatedCfg);
+
                   dashboard.addTriggerLog({
                     timestamp: Date.now(),
                     text,
                     targetDay: analysis.targetDay,
                     listingMessage,
                     latency,
+                    action: analysis.action,
                   });
+                  dashboard.addSystemLog(
+                    `[${analysis.action === 'takeover' ? 'TAKEOVER' : 'SUCCESS'}] Listing untuk ${formatListingDate(targetDateObj)} berhasil terkirim ke ${targetJid} (${latency}ms)`,
+                    'success'
+                  );
                   console.log(`[SUCCESS] Listing terkirim ke ${targetJid} dalam ${latency}ms`);
                 }).catch((err) => {
                   console.error('[ERROR] Gagal mengirim listing:', err);

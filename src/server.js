@@ -149,8 +149,12 @@ class DashboardServer {
     const { type, data } = payload;
 
     if (type === 'test_chat') {
-      const analysis = analyzeMessage(data.text);
       const config = getConfig();
+      const analysis = analyzeMessage(data.text, {
+        registeredSessionDate: data.registeredSessionDate !== undefined ? data.registeredSessionDate : config.registeredSessionDate,
+        sessionDays: config.sessionDays,
+        targetMode: config.targetMode,
+      });
       const members = (Array.isArray(config.members) && config.members.length > 0)
         ? config.members
         : (this.state.members.length ? this.state.members : ['Nama 1', 'Nama 2', 'Nama 3']);

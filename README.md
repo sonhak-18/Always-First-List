@@ -148,6 +148,10 @@ Saat bot berjalan, buka peramban di `http://localhost:3000` untuk memanfaatkan f
 - **Mode Sasaran Listing**:
   - `subsequent`: Mendaftarkan antrean untuk sesi siklus berikutnya (Advance Listing).
   - `immediate`: Mendaftarkan antrean langsung untuk sesi terdekat yang diumumkan dosen.
+- **Session Guard (Anti-Dobel & Takeover)**:
+  - Mengunci tanggal sesi yang sedang Anda ikuti (`registeredSessionDate`).
+  - **Standby otomatis**: Menahan pengiriman jika dosen hanya mengirim konfirmasi persetujuan kuota/jam pada H-1 agar tidak dobel kirim dan tidak mencuri start kuota minggu depan.
+  - **Takeover otomatis**: Jika dosen membatalkan sesi terdaftar, bot langsung merebut slot sesi pengganti berikutnya.
 - **Format Pesan Kustom**: Mengatur susunan teks listing pesan dengan variabel:
   - `{date}`: Tanggal bimbingan dalam format Indonesia (contoh: `Senin, 02 November 2026`).
   - `{day}`: Nama hari bimbingan (contoh: `Senin`).

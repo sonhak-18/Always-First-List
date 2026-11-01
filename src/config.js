@@ -9,6 +9,7 @@ const DEFAULT_CONFIG = {
   targetMode: 'subsequent',
   members: [],
   cooldownMinutes: 15,
+  registeredSessionDate: null,
 };
 
 let currentConfig = null;
@@ -72,6 +73,11 @@ function sanitizeConfig(input) {
     input.cooldownMinutes <= 1440
   ) {
     clean.cooldownMinutes = input.cooldownMinutes;
+  }
+  if (input.registeredSessionDate === null || input.registeredSessionDate === '') {
+    clean.registeredSessionDate = null;
+  } else if (typeof input.registeredSessionDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input.registeredSessionDate)) {
+    clean.registeredSessionDate = input.registeredSessionDate;
   }
   return clean;
 }
