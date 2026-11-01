@@ -786,7 +786,7 @@
             </div>
             <div class="form-field">
               <label class="form-label" for="membersInput">Daftar Anggota Tim (dipisahkan koma):</label>
-              <input type="text" id="membersInput" class="form-input" oninput="handleMembersChange()" placeholder="Nama 1, Nama 2, Nama 3">
+              <input type="text" id="membersInput" class="form-input" oninput="handleMembersChange()" placeholder="Nama anggota dari .env">
             </div>
             <div class="form-field" style="margin-top: 4px;">
               <label class="form-label" for="cooldownInput">Jeda Waktu Antispam (Menit):</label>
@@ -856,7 +856,7 @@
       cooldownMinutes: 15
     };
     let selectedDays = ['senin', 'rabu'];
-    let currentMembers = ['Nama 1', 'Nama 2', 'Nama 3'];
+    let currentMembers = [];
 
     async function loadInitialData() {
       try {

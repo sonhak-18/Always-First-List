@@ -1,14 +1,25 @@
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 const CONFIG_FILE = path.resolve(__dirname, '../config.json');
+
+function getEnvMembers() {
+  if (!process.env.LISTING_MEMBERS) return [];
+  return process.env.LISTING_MEMBERS.split(',').map(m => m.trim()).filter(Boolean);
+}
+
+function isPlaceholderMembers(members) {
+  if (!Array.isArray(members) || members.length === 0) return true;
+  return members.every((m, idx) => m.toLowerCase() === `nama ${idx + 1}`);
+}
 
 const DEFAULT_CONFIG = {
   messageTemplate: 'List bimbingan {date}:\n{members}',
   sessionDays: ['senin', 'rabu'],
   targetMode: 'subsequent',
   members: [],
-  cooldownMinutes: 15,
+  cooldownMinutes: parseInt(process.env.COOLDOWN_MINUTES || '15', 10),
   registeredSessionDate: null,
 };
 
@@ -32,15 +43,33 @@ function loadConfig() {
 
 function saveConfig(cfg) {
   currentConfig = Object.assign({}, DEFAULT_CONFIG, cfg);
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify(currentConfig, null, 2), 'utf-8');
-  return currentConfig;
+  const toSave = Object.assign({}, currentConfig);
+  const envMembers = getEnvMembers();
+
+  // Keep config.json free of private member names if it matches .env or default placeholder
+  if (
+    !toSave.members ||
+    toSave.members.length === 0 ||
+    isPlaceholderMembers(toSave.members) ||
+    (envMembers.length > 0 && JSON.stringify(toSave.members) === JSON.stringify(envMembers))
+  ) {
+    toSave.members = [];
+  }
+
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(toSave, null, 2), 'utf-8');
+  return getConfig();
 }
 
 function getConfig() {
   if (!currentConfig) {
     loadConfig();
   }
-  return currentConfig;
+  const envMembers = getEnvMembers();
+  const members = (currentConfig.members && currentConfig.members.length > 0 && !isPlaceholderMembers(currentConfig.members))
+    ? currentConfig.members
+    : (envMembers.length > 0 ? envMembers : ['Nama 1', 'Nama 2', 'Nama 3']);
+
+  return Object.assign({}, currentConfig, { members });
 }
 
 function sanitizeConfig(input) {

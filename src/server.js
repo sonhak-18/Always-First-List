@@ -1,7 +1,8 @@
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const express = require('express');
 const http = require('http');
 const { WebSocketServer, WebSocket } = require('ws');
-const path = require('path');
 const fs = require('fs');
 const { execSync } = require('child_process');
 const { getDictionary, addKeyword, removeKeyword, saveDictionary } = require('./dictionary');
@@ -58,11 +59,11 @@ class DashboardServer {
     this.state = {
       connected: false,
       qr: null,
-      dosenPhone: '',
-      sourceGroupJid: '',
-      targetGroupJid: '',
-      members: [],
-      cooldownMinutes: 15,
+      dosenPhone: (process.env.DOSEN_PHONE || '').replace(/[^0-9]/g, ''),
+      sourceGroupJid: process.env.SOURCE_GROUP_JID?.trim() || '',
+      targetGroupJid: process.env.TARGET_GROUP_JID?.trim() || '',
+      members: (process.env.LISTING_MEMBERS || '').split(',').map(m => m.trim()).filter(Boolean),
+      cooldownMinutes: parseInt(process.env.COOLDOWN_MINUTES || '15', 10),
       lastTriggerTime: 0,
       groups: [],
     };

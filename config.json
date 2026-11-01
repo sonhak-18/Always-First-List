@@ -5,11 +5,7 @@
     "rabu"
   ],
   "targetMode": "subsequent",
-  "members": [
-    "Nama 1",
-    "Nama 2",
-    "Nama 3"
-  ],
+  "members": [],
   "cooldownMinutes": 15,
   "registeredSessionDate": null
 }
