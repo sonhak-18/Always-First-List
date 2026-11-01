@@ -686,11 +686,11 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
         Always First List
       </span>
-      <span style="color: var(--text-dim); font-size: 11px;">[Web Console]</span>
+      <span style="color: var(--text-dim); font-size: 11px;">[Konsol Web]</span>
     </div>
     <div class="header-right">
       <div id="stealModeMeta" class="status-tag" style="display: none; color: var(--amber); border-color: var(--amber); background: rgba(255, 171, 0, 0.08);">
-        <span>[CURI SEMUA WAKTU]</span>
+        <span>[MODE MENCURI]</span>
       </div>
       <div id="statusTag" class="status-tag offline">
         <span id="statusLabel">DISCONNECTED</span>
@@ -704,7 +704,7 @@
   <div class="mobile-pane-nav" id="mobileNav">
     <button type="button" class="mobile-nav-btn active" id="btnPaneLogs" onclick="switchMobilePane('logs')">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-      Live Stream
+      Log Aktivitas
     </button>
     <button type="button" class="mobile-nav-btn" id="btnPaneControls" onclick="switchMobilePane('controls')">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
@@ -719,7 +719,7 @@
       <div class="pane-header">
         <span class="title">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-          Live & Saved Log Stream
+          Log Chat & Aktivitas
         </span>
         <div style="display: flex; align-items: center; gap: 8px;">
           <span id="logCount" style="color: var(--text-dim);">0 records</span>
@@ -735,8 +735,8 @@
     <div id="paneControls" class="pane mobile-hidden" style="border-right: none;">
       <div class="pane-header">
         <div class="tab-nav">
-          <button id="tabBtnDict" class="tab-btn active" onclick="switchRightTab('dictionary')">[KAMUS &amp; ATURAN]</button>
-          <button id="tabBtnConfig" class="tab-btn" onclick="switchRightTab('config')">[JADWAL &amp; FORMAT PESAN]</button>
+          <button id="tabBtnDict" class="tab-btn active" onclick="switchRightTab('dictionary')">[KAMUS KATA KUNCI]</button>
+          <button id="tabBtnConfig" class="tab-btn" onclick="switchRightTab('config')">[PENGATURAN JADWAL]</button>
         </div>
         <span id="dictStats" style="color: var(--text-dim);">0 aturan aktif</span>
       </div>
@@ -747,26 +747,26 @@
           <!-- Interactive Sandbox -->
           <div class="sandbox-card">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-              <span style="font-weight: 600; font-size: 11px; color: var(--cyan);">Uji Pesan Dosen (Sandbox):</span>
+              <span style="font-weight: 600; font-size: 11px; color: var(--cyan);">Uji Pesan Dosen:</span>
               <label style="display: inline-flex; align-items: center; gap: 5px; font-size: 10px; color: var(--amber); cursor: pointer;">
                 <input type="checkbox" id="sandboxStealMode" style="accent-color: var(--amber);" onchange="this.dataset.userTouched='1'; runSandboxTest();">
-                Simulasi Mode Mencuri
+                Simulasikan Mode Mencuri
               </label>
             </div>
-            <textarea id="sandboxInput" class="sandbox-textarea" placeholder="Ketik pesan dosen di sini (cth: Silahkan ya utk 6 mhs)..."></textarea>
-            <button class="sandbox-btn" onclick="runSandboxTest()">Uji Pesan Ini</button>
-            <div id="sandboxOutput" class="sandbox-output">Ketik pesan di atas lalu klik Uji Pesan Ini.</div>
+            <textarea id="sandboxInput" class="sandbox-textarea" placeholder="Masukkan pesan dosen (contoh: Silakan ya untuk 6 mahasiswa)..."></textarea>
+            <button class="sandbox-btn" onclick="runSandboxTest()">Uji Pesan</button>
+            <div id="sandboxOutput" class="sandbox-output">Ketik pesan di atas lalu klik Uji Pesan.</div>
           </div>
 
           <!-- Whitelist Section -->
           <div class="dict-group">
             <div class="dict-title">
-              <span style="color: var(--green);">KATA KUNCI BUKA BIMBINGAN (WHITELIST)</span>
+              <span style="color: var(--green);">KATA KUNCI PEMICU (WHITELIST)</span>
               <span id="wlCount" style="color: var(--text-dim);">0</span>
             </div>
             <div id="wlTags" class="tag-container"></div>
             <form class="add-row" onsubmit="handleAddKeyword(event, 'whitelist', 'wlInput')">
-              <input type="text" id="wlInput" class="add-input" placeholder="Tambah kata / regex whitelist...">
+              <input type="text" id="wlInput" class="add-input" placeholder="Tambah kata kunci atau pola regex...">
               <button type="submit" class="add-btn">+ Tambah</button>
             </form>
           </div>
@@ -774,12 +774,12 @@
           <!-- Cancellation Section -->
           <div class="dict-group">
             <div class="dict-title">
-              <span style="color: var(--amber);">PEMBATALAN SESI TERDEKAT (BUKA SESI BERIKUTNYA)</span>
+              <span style="color: var(--amber);">PEMBATALAN SESI (TAKEOVER JADWAL)</span>
               <span id="cnCount" style="color: var(--text-dim);">0</span>
             </div>
             <div id="cnTags" class="tag-container"></div>
             <form class="add-row" onsubmit="handleAddKeyword(event, 'cancellation', 'cnInput')">
-              <input type="text" id="cnInput" class="add-input" placeholder="Tambah pola pembatalan sesi terdekat...">
+              <input type="text" id="cnInput" class="add-input" placeholder="Tambah pola pembatalan sesi...">
               <button type="submit" class="add-btn">+ Tambah</button>
             </form>
           </div>
@@ -800,12 +800,12 @@
           <!-- Blacklist Section -->
           <div class="dict-group">
             <div class="dict-title">
-              <span style="color: var(--red);">KATA KUNCI BATAL / LIBUR (BLACKLIST)</span>
+              <span style="color: var(--red);">KATA KUNCI PENOLAKAN (BLACKLIST)</span>
               <span id="blCount" style="color: var(--text-dim);">0</span>
             </div>
             <div id="blTags" class="tag-container"></div>
             <form class="add-row" onsubmit="handleAddKeyword(event, 'blacklist', 'blInput')">
-              <input type="text" id="blInput" class="add-input" placeholder="Tambah kata penolakan...">
+              <input type="text" id="blInput" class="add-input" placeholder="Tambah kata kunci penolakan...">
               <button type="submit" class="add-btn">+ Tambah</button>
             </form>
           </div>
@@ -817,11 +817,11 @@
           <!-- Steal Mode Card -->
           <div class="config-card" id="stealModeCard" style="border-left: 3px solid var(--amber);">
             <div class="config-header">
-              <span style="color: var(--amber);">[MODE MENCURI (CURI SEMUA WAKTU)]</span>
+              <span style="color: var(--amber);">[1. MODE MENCURI (AGRESIF)]</span>
               <span id="stealModeBadge" class="status-tag offline">[NONAKTIF]</span>
             </div>
             <div class="config-desc">
-              Saat diaktifkan, bot berada dalam mode agresif: <strong>setiap beliau (dosen) mengirimkan chat apapun di grup</strong>, bot akan langsung mengirimkan list antrean tanpa menunggu kata kunci whitelist dan mengabaikan pembatasan sesi (mencuri semua waktu).
+              Kirim format antrean seketika untuk setiap chat apa pun dari dosen di grup, tanpa menunggu kata kunci dan mengabaikan pembatasan sesi terdaftar.
             </div>
             <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px;">
               <label class="mode-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; padding: 6px 10px;">
@@ -834,24 +834,24 @@
           <!-- Mode Selection Card -->
           <div class="config-card">
             <div class="config-header">
-              <span>[1. METODE LISTING ANTREAN]</span>
+              <span>[2. METODE PENENTUAN JADWAL]</span>
             </div>
             <div class="config-desc">
-              Tentukan cara bot menetapkan tanggal target listing saat dosen membuka kuota:
+              Pilih cara bot menentukan tanggal target bimbingan:
             </div>
             <div class="mode-options">
               <label class="mode-label">
                 <input type="radio" name="targetModeRadio" value="subsequent" id="modeSubsequent" onchange="handleConfigChange()" checked>
                 <div class="mode-info">
-                  <span class="mode-name">Siklus Maju (Listing Sesi Berikutnya)</span>
-                  <span class="mode-desc">Konfirmasi kuota hari ini menjadi pemicu untuk merebut kuota sesi jadwal berikutnya (antrean mendahului konfirmasi).</span>
+                  <span class="mode-name">Siklus Maju (Sesi Berikutnya)</span>
+                  <span class="mode-desc">Daftarkan antrean untuk jadwal sesi berikutnya saat dosen membuka sesi berjalan.</span>
                 </div>
               </label>
               <label class="mode-label">
                 <input type="radio" name="targetModeRadio" value="immediate" id="modeImmediate" onchange="handleConfigChange()">
                 <div class="mode-info">
-                  <span class="mode-name">Sesi Terdekat / Diumumkan (Immediate)</span>
-                  <span class="mode-desc">Konfirmasi kuota langsung merebut kuota untuk sesi bimbingan yang diumumkan dosen atau jadwal terdekat berikutnya.</span>
+                  <span class="mode-name">Sesi Terdekat (Sesuai Pengumuman)</span>
+                  <span class="mode-desc">Daftarkan antrean langsung untuk tanggal sesi terdekat yang sedang diumumkan dosen.</span>
                 </div>
               </label>
             </div>
@@ -860,11 +860,11 @@
           <!-- Schedule Days Setup Card -->
           <div class="config-card">
             <div class="config-header">
-              <span>[2. HARI JADWAL BIMBINGAN RUTIN]</span>
+              <span>[3. HARI BIMBINGAN MINGGUAN]</span>
               <span id="sessionStats" style="color: var(--cyan); font-size: 10px;">2 sesi / pekan</span>
             </div>
             <div class="config-desc">
-              Pilih hari-hari pelaksanaan bimbingan (bisa 1 hari, 2 hari, 3 hari, atau lebih):
+              Pilih hari pelaksanaan bimbingan rutin:
             </div>
             <div class="day-selector" id="daySelectorContainer">
               <button type="button" class="day-chip active" data-day="senin" onclick="toggleDayChip('senin')">Senin</button>
@@ -880,20 +880,20 @@
           <!-- Members & Cooldown Card -->
           <div class="config-card">
             <div class="config-header">
-              <span>[3. DATA ANGGOTA TIM &amp; JEDA ANTISPAM]</span>
+              <span>[4. ANGGOTA TIM &amp; JEDA ANTISPAM]</span>
             </div>
             <div class="config-desc">
-              Atur urutan nama anggota tim yang didaftarkan ke slot kuota dan batas jeda antar chat:
+              Urutan nama mahasiswa untuk slot antrean dan batas jeda pengiriman:
             </div>
             <div class="form-field">
               <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                <label class="form-label" for="membersInput">Daftar Anggota Tim (dipisahkan koma):</label>
+                <label class="form-label" for="membersInput">Daftar Nama Anggota (pisahkan dengan koma):</label>
                 <span id="envMembersBadge" style="font-size: 10px; color: var(--cyan); font-weight: 600;"></span>
               </div>
               <input type="text" id="membersInput" class="form-input" autocomplete="off" oninput="handleMembersChange()" placeholder="Nama anggota dari .env">
             </div>
             <div class="form-field" style="margin-top: 4px;">
-              <label class="form-label" for="cooldownInput">Jeda Waktu Antispam (Menit):</label>
+              <label class="form-label" for="cooldownInput">Jeda Antispam (Menit):</label>
               <input type="number" id="cooldownInput" min="1" max="180" class="form-input" autocomplete="off" oninput="handleConfigChange()" placeholder="15" style="max-width: 140px;">
             </div>
           </div>
@@ -901,10 +901,10 @@
           <!-- Template Setup Card -->
           <div class="config-card">
             <div class="config-header">
-              <span>[4. FORMAT PESAN LISTING ANTREAN]</span>
+              <span>[5. FORMAT PESAN ANTREAN]</span>
             </div>
             <div class="config-desc">
-              Atur format teks yang akan dikirim bot ke grup antrean. Tekan Enter untuk baris baru, atau klik tombol variabel:
+              Format pesan yang akan dikirim bot ke grup target. Klik tombol variabel untuk menyisipkan data otomatis:
             </div>
             <div class="token-bar">
               <span style="color: var(--text-dim); font-size: 10px;">Sisipkan:</span>
@@ -916,24 +916,24 @@
             </div>
             <textarea id="templateInput" class="form-textarea" oninput="handleConfigChange()" placeholder="List bimbingan {date}:&#10;{members}"></textarea>
 
-            <div class="form-label" style="margin-top: 4px;">Pratinjau Hasil Pesan:</div>
+            <div class="form-label" style="margin-top: 4px;">Pratinjau Pesan:</div>
             <div id="templatePreview" class="preview-box"></div>
           </div>
 
           <!-- Registered Session Guard Card -->
           <div class="config-card">
             <div class="config-header">
-              <span>[5. GUARD SESI TERDAFTAR (ANTI-DOBEL &amp; TAKEOVER)]</span>
+              <span>[6. KUNCI SESI TERDAFTAR (ANTI-DOBEL)]</span>
               <span id="registeredStatusBadge" style="font-size: 10px; font-weight: 700; color: var(--text-dim);">[BELUM TERDAFTAR]</span>
             </div>
             <div class="config-desc">
-              Kunci tanggal sesi yang saat ini sudah didaftarkan kelompokmu. Saat dosen mengonfirmasi jadwal H-1 untuk tanggal ini, bot otomatis <strong>STANDBY (DIAM)</strong> agar tidak dobel kirim atau mencuri start minggu depan. Jika dosen membatalkan sesi ini, bot otomatis <strong>TAKEOVER</strong> sesi berikutnya.
+              Kunci tanggal sesi yang sudah didapat kelompokmu. Bot akan diam (standby) saat dosen mengonfirmasi jadwal ini agar tidak dobel kirim, dan otomatis mengambil alih sesi berikutnya jika sesi ini dibatalkan dosen.
             </div>
             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px;">
               <input type="date" id="registeredSessionInput" class="form-input" style="max-width: 150px;" onchange="handleRegisteredSessionChange()">
               <button type="button" class="token-btn" onclick="setSessionRelative(0)">Hari Ini</button>
               <button type="button" class="token-btn" onclick="setSessionRelative(1)">Besok</button>
-              <button type="button" class="token-btn" style="color: var(--amber); border-color: var(--border);" onclick="clearRegisteredSession()">Reset / Kosongkan</button>
+              <button type="button" class="token-btn" style="color: var(--amber); border-color: var(--border);" onclick="clearRegisteredSession()">Kosongkan</button>
             </div>
 
             <div class="btn-save-row" style="margin-top: 12px;">
@@ -1207,7 +1207,7 @@
     function handleConfigChange() {
       updateTemplatePreview();
       const statusEl = document.getElementById('saveStatus');
-      statusEl.textContent = '* Perubahan belum disimpan';
+      statusEl.textContent = '* Ada perubahan yang belum disimpan';
       statusEl.style.color = 'var(--amber)';
     }
 
@@ -1325,7 +1325,7 @@
       }
 
       if (!selectedDays || selectedDays.length === 0) {
-        alert('Pilih minimal 1 hari jadwal bimbingan.');
+        alert('Pilih minimal satu hari jadwal bimbingan.');
         return;
       }
 
@@ -1354,13 +1354,13 @@
           data: payload
         }));
         const statusEl = document.getElementById('saveStatus');
-        statusEl.textContent = '[BERHASIL DISIMPAN]';
+        statusEl.textContent = '[Pengaturan tersimpan]';
         statusEl.style.color = 'var(--green)';
         setTimeout(() => {
-          if (statusEl.textContent === '[BERHASIL DISIMPAN]') statusEl.textContent = '';
+          if (statusEl.textContent === '[Pengaturan tersimpan]') statusEl.textContent = '';
         }, 3000);
       } else {
-        alert('Koneksi WebSocket terputus. Tidak dapat menyimpan.');
+        alert('Koneksi terputus. Tidak dapat menyimpan pengaturan.');
       }
     }
 
@@ -1675,7 +1675,7 @@
     }
 
     function clearLogHistory() {
-      if (confirm('Yakin ingin menghapus seluruh riwayat log chat?')) {
+      if (confirm('Hapus seluruh riwayat chat yang tersimpan?')) {
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'clear_history' }));
         }

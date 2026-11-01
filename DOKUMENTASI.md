@@ -124,13 +124,15 @@ Bot tidak dibatasi hanya pada 2 hari sepekan. Sistem mendukung konfigurasi hari 
 
 ### Aturan Tambahan & Session Guard:
 - **Mode Mencuri (Curi Semua Waktu / Steal Mode)**:
-  Saat diaktifkan (`stealMode: true`), bot beralih ke mode agresif tanpa filter kata kunci: **setiap chat apa pun yang dikirimkan oleh dosen di grup sumber langsung memicu pengiriman list antrean ke grup target**. Mode ini mengabaikan syarat whitelist, melewati pengecekan blacklist, dan menonaktifkan status standby sesi terdaftar guna merebut setiap kuota yang tersedia. Jika dosen menyebutkan hari pengalihan spesifik (contoh: *"bisanya rabu"*), bot tetap menetapkan tanggal target listing ke hari tersebut. Mode ini dapat diaktifkan atau dinonaktifkan kapan saja melalui tombol saklar di Konsol Web.
-- **Session Guard (Anti-Dobel Kirim pada Konfirmasi H-1)**:
-  Jika kelompok Anda sudah terdaftar pada sesi tertentu (`registeredSessionDate`, misal: Rabu, 28 Okt), dan pada H-1 dosen mengirim chat konfirmasi persetujuan kuota/jam untuk sesi tersebut, bot otomatis berstatus **STANDBY (DIAM)**. Bot tidak akan mengirim ulang format list dan tidak akan mencuri start untuk merebut kuota minggu depan.
-- **Takeover Otomatis saat Pembatalan Sesi Terdaftar**:
-  Jika dosen mengumumkan pembatalan untuk tanggal sesi yang sedang Anda pegang (contoh: *"Besok saya tidak bisa bimbingan"*), kuota sesi tersebut dianggap gugur. Bot seketika melakukan **TAKEOVER** dengan mengirimkan format antrean untuk jadwal bimbingan resmi berikutnya.
-- **Pengalihan Jadwal (Redirect)**: Jika dosen mengirim pesan semacam *"Senin nggak bisa, bisanya rabu ya"*, mesin aturan mendeteksi pola kata kunci pengalihan dan menetapkan target bimbingan ke hari spesifik yang ditunjuk dosen terlepas dari mode yang aktif.
-- **Dosen Berhalangan Panjang (Blacklist)**: Jika dosen mengumumkan tugas luar kota atau libur panjang (contoh: *"Besok sampai minggu depan saya ada penugasan luar kota"*), pesan diblokir oleh blacklist sehingga bot tidak mengirim pesan apa pun dan tidak melakukan takeover.
+  Saat diaktifkan (`stealMode: true`), bot beralih ke mode respons langsung: **setiap chat apa pun dari dosen di grup langsung memicu pengiriman format antrean**. Mode ini mengabaikan syarat whitelist, melewati pengecekan blacklist, dan menonaktifkan status standby sesi terdaftar. Jika dosen menyebutkan hari spesifik (contoh: *"bisanya rabu"*), tanggal target otomatis disesuaikan ke hari tersebut. Mode ini dapat dinyalakan atau dimatikan kapan saja lewat Konsol Web.
+- **Kunci Sesi Terdaftar (Session Guard)**:
+  Jika kelompok sudah terdaftar pada tanggal sesi tertentu (`registeredSessionDate`), bot berstatus **STANDBY (DIAM)** saat dosen mengonfirmasi jadwal pada H-1 agar tidak dobel kirim.
+- **Takeover Sesi**:
+  Jika dosen membatalkan sesi yang sudah didaftarkan (contoh: *"Besok saya tidak bisa bimbingan"*), bot seketika mengirim format antrean untuk jadwal bimbingan berikutnya.
+- **Pengalihan Hari (Redirect)**:
+  Jika dosen mengalihkan hari (contoh: *"Senin tidak bisa, bisanya rabu ya"*), bot otomatis menetapkan target antrean ke hari yang ditunjuk dosen.
+- **Dosen Berhalangan Panjang (Blacklist)**:
+  Jika dosen mengumumkan tugas luar kota atau libur panjang (contoh: *"Sampai minggu depan saya ada tugas luar kota"*), pesan diabaikan dan bot tidak mengirim pesan apa pun.
 
 ---
 

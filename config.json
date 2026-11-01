@@ -7,5 +7,6 @@
   "targetMode": "subsequent",
   "members": [],
   "cooldownMinutes": 5,
-  "registeredSessionDate": null
+  "registeredSessionDate": null,
+  "stealMode": true
 }
