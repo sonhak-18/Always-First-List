@@ -41,7 +41,6 @@ function getTargetDate(
 
   const currentDayIndex = now.day();
 
-  // Parse and sort unique session day indices
   const validIndices = Array.from(
     new Set(
       (Array.isArray(sessionDays) && sessionDays.length > 0 ? sessionDays : ['senin', 'rabu'])
@@ -54,23 +53,20 @@ function getTargetDate(
     validIndices.push(1, 3);
   }
 
-  // Single session day per week (e.g. only Wednesday or only Friday)
+  // Single session day per week
   if (validIndices.length === 1) {
     const onlyDay = validIndices[0];
     let daysDiff = onlyDay - currentDayIndex;
     if (targetMode === 'immediate' && !isCancellation) {
       if (daysDiff < 0) daysDiff += 7;
     } else {
-      // Subsequent mode or cancellation: confirming/cancelling this week opens next week's session
       if (daysDiff <= 0) daysDiff += 7;
     }
     return now.add(daysDiff, 'day');
   }
 
-  // Multiple session days per week
+  // Immediate mode: target the closest upcoming session day.
   if (targetMode === 'immediate' && !isCancellation) {
-    // Mode A (Immediate / Announced Session):
-    // Target is the closest upcoming session day.
     let bestDiff = null;
     for (const dayIdx of validIndices) {
       let diff = dayIdx - currentDayIndex;
@@ -82,28 +78,23 @@ function getTargetDate(
     return now.add(bestDiff, 'day');
   }
 
-  // Mode B (Subsequent Cycle / Advance Listing):
-  // Listing always precedes confirmation. Confirming session N triggers listing for session N+1.
+  // Subsequent mode: advance listing for session N+1.
   const k = validIndices.length;
   let targetIdx;
   let addDays = 0;
 
   if (currentDayIndex <= validIndices[0]) {
-    // Before or on first session -> target is second session of this week
     targetIdx = validIndices[1];
     addDays = targetIdx - currentDayIndex;
     if (addDays <= 0) addDays += 7;
   } else {
-    // Find where currentDayIndex falls among the session days
     let found = false;
     for (let i = 0; i < k - 1; i++) {
       if (currentDayIndex <= validIndices[i + 1]) {
-        // Confirmation is for session (i + 1), target is the next session
         if (i + 2 < k) {
           targetIdx = validIndices[i + 2];
           addDays = targetIdx - currentDayIndex;
         } else {
-          // Wrap around to first session of next week
           targetIdx = validIndices[0];
           addDays = (targetIdx - currentDayIndex) + 7;
         }
@@ -113,7 +104,6 @@ function getTargetDate(
     }
 
     if (!found) {
-      // After the last session day of the week -> wraps around to first session of next week
       targetIdx = validIndices[0];
       addDays = (targetIdx - currentDayIndex) + 7;
     }

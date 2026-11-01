@@ -2,9 +2,8 @@ const { analyzeMessage } = require('./src/rules');
 const { generateListingText, getContextDate } = require('./src/dateHelper');
 const dayjs = require('dayjs');
 
-// Simulate reference date: Tuesday 27 October 2026
+// Reference date: Tuesday 27 October 2026
 const SIMULATED_BASE_DATE = dayjs('2026-10-27T14:00:00.000Z');
-// Tomorrow is Wednesday 28 October 2026
 const WEDNESDAY_SESSION = '2026-10-28';
 
 const testCases = [

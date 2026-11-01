@@ -170,8 +170,7 @@ function analyzeMessage(text, options = {}) {
 
   if (matchedWhitelist || isRedirect) {
     if (isSameSession) {
-      // Dosen is confirming the exact session we are ALREADY registered for!
-      // Suppress / Standby to avoid sending a duplicate list or prematurely stealing subsequent cycle
+      // Suppress listing when the group is already registered for this session.
       return {
         shouldTrigger: false,
         action: 'standby',
