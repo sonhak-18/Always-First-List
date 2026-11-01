@@ -11,7 +11,7 @@
       --surface-elevated: #151b26;
       --border: #1a2332;
       --text-main: #d1d7e0;
-      --text-dim: #64748b;
+      --text-dim: #94a3b8;
       --text-bright: #ffffff;
       --green: #00e676;
       --cyan: #00d2ff;
@@ -99,10 +99,73 @@
       overflow: hidden;
     }
 
-    @media (max-width: 960px) {
+    .mobile-pane-nav {
+      display: none;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 6px 12px;
+      gap: 8px;
+    }
+
+    .mobile-nav-btn {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 8px 12px;
+      cursor: pointer;
+      border-radius: 2px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .mobile-nav-btn.active {
+      background: var(--surface-elevated);
+      color: var(--cyan);
+      border-color: var(--cyan);
+    }
+
+    @media (max-width: 860px) {
+      .mobile-pane-nav {
+        display: flex;
+      }
+
       .workspace {
-        grid-template-columns: 1fr;
-        grid-template-rows: 1fr 1fr;
+        display: block;
+        height: auto;
+        flex: 1;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .workspace > .pane {
+        width: 100%;
+        height: 100%;
+        border-right: none;
+      }
+
+      .workspace > .pane.mobile-hidden {
+        display: none !important;
+      }
+    }
+
+    @media (pointer: coarse) {
+      .token-btn, .day-chip, .tab-btn, .sandbox-btn, .btn-primary, .btn-header, .mobile-nav-btn {
+        min-height: 38px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+      }
+      .token-btn {
+        padding: 8px 12px;
+      }
+      .day-chip {
+        padding: 8px 14px;
       }
     }
 
@@ -634,10 +697,22 @@
     </div>
   </header>
 
+  <!-- Mobile Pane Switcher (Visible on screens <= 860px) -->
+  <div class="mobile-pane-nav" id="mobileNav">
+    <button type="button" class="mobile-nav-btn active" id="btnPaneLogs" onclick="switchMobilePane('logs')">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+      Live Stream
+    </button>
+    <button type="button" class="mobile-nav-btn" id="btnPaneControls" onclick="switchMobilePane('controls')">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+      Kamus & Pengaturan
+    </button>
+  </div>
+
   <div class="workspace">
     
     <!-- Left Pane: Live Log Stream (Persisted) -->
-    <div class="pane">
+    <div id="paneLogs" class="pane">
       <div class="pane-header">
         <span class="title">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
@@ -649,12 +724,12 @@
         </div>
       </div>
       <div id="logFeed" class="pane-content">
-        <div style="color: var(--text-dim); font-style: italic;">Memuat riwayat chat...</div>
+        <div style="color: var(--text-dim); line-height: 1.6; padding: 12px 4px; font-size: 11px;">Memuat riwayat chat...</div>
       </div>
     </div>
 
     <!-- Right Pane: Active Dictionary, Sandbox & Settings -->
-    <div class="pane" style="border-right: none;">
+    <div id="paneControls" class="pane mobile-hidden" style="border-right: none;">
       <div class="pane-header">
         <div class="tab-nav">
           <button id="tabBtnDict" class="tab-btn active" onclick="switchRightTab('dictionary')">[KAMUS &amp; ATURAN]</button>
@@ -956,8 +1031,31 @@
       } else if (type === 'test_result') {
         displayTestResult(data);
       } else if (type === 'history_cleared') {
-        document.getElementById('logFeed').innerHTML = '<div style="color: var(--text-dim); font-style: italic;">Riwayat log telah dibersihkan.</div>';
+        document.getElementById('logFeed').innerHTML = '<div style="color: var(--text-dim); line-height: 1.6; padding: 12px 4px; font-size: 11px;">Riwayat log telah dibersihkan.<br><span style="opacity: 0.85;">Pesan baru dari grup akan langsung muncul di sini.</span></div>';
         document.getElementById('logCount').textContent = '0 records';
+      }
+    }
+
+    let activeMobilePane = 'logs';
+    function switchMobilePane(pane) {
+      activeMobilePane = pane;
+      const paneLogs = document.getElementById('paneLogs');
+      const paneControls = document.getElementById('paneControls');
+      const btnLogs = document.getElementById('btnPaneLogs');
+      const btnControls = document.getElementById('btnPaneControls');
+
+      if (!paneLogs || !paneControls) return;
+
+      if (pane === 'logs') {
+        paneLogs.classList.remove('mobile-hidden');
+        paneControls.classList.add('mobile-hidden');
+        if (btnLogs) btnLogs.classList.add('active');
+        if (btnControls) btnControls.classList.remove('active');
+      } else {
+        paneLogs.classList.add('mobile-hidden');
+        paneControls.classList.remove('mobile-hidden');
+        if (btnLogs) btnLogs.classList.remove('active');
+        if (btnControls) btnControls.classList.add('active');
       }
     }
 
@@ -1287,7 +1385,7 @@
       allItems.sort((a, b) => b.time - a.time);
 
       if (allItems.length === 0) {
-        feed.innerHTML = '<div style="color: var(--text-dim); font-style: italic;">Belum ada aktivitas tercatat.</div>';
+        feed.innerHTML = '<div style="color: var(--text-dim); line-height: 1.6; padding: 12px 4px; font-size: 11px;">Belum ada riwayat chat.<br><span style="opacity: 0.85;">Pesan dari grup sumber dan aktivitas bot akan muncul secara otomatis di sini.</span></div>';
         document.getElementById('logCount').textContent = '0 records';
         return;
       }
