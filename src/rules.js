@@ -80,7 +80,6 @@ function analyzeMessage(text, options = {}) {
     stealMode = false,
     stealModeRequireConfirmation = false,
     hasPrecedingConfirmation = false,
-    promptTargetDay = null,
   } = options;
 
   const cleanText = text.trim();
@@ -114,8 +113,6 @@ function analyzeMessage(text, options = {}) {
   const isStealArmed = stealMode && (!stealModeRequireConfirmation || hasPrecedingConfirmation);
 
   if (isStealArmed) {
-    const finalTargetDay = targetDay || promptTargetDay || null;
-
     if (isRedirect && targetDay) {
       return {
         shouldTrigger: true,
@@ -157,9 +154,9 @@ function analyzeMessage(text, options = {}) {
       shouldTrigger: true,
       action: 'steal',
       reason: stealModeRequireConfirmation
-        ? `Mode Mencuri: Dipicu setelah konfirmasi pengajuan mahasiswa terdeteksi${finalTargetDay ? ` (target: ${finalTargetDay})` : ''}`
+        ? 'Mode Mencuri: Dipicu setelah konfirmasi pengajuan mahasiswa terdeteksi'
         : 'Mode Mencuri: Setiap chat dosen langsung memicu pengiriman list antrean (mencuri semua waktu)',
-      targetDay: finalTargetDay,
+      targetDay: null,
       contextDate: contextDateStr,
       contextDateFormatted,
       detectedKeywords: stealModeRequireConfirmation

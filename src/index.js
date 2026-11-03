@@ -273,19 +273,17 @@ async function startBot() {
 
         if (!isDosen) {
           if (isConfirmationRequest(text)) {
-            const detectedDay = extractTargetDay(text);
             lastConfirmationRequest = {
               timestamp: Date.now(),
               text,
               sender: resolvedPhone,
-              targetDay: detectedDay,
             };
             dashboard.addSystemLog(
-              `[PENGAJUAN MAHASISWA] Terdeteksi pesan pengajuan bimbingan dari ${resolvedPhone}${detectedDay ? ` untuk hari ${detectedDay}` : ''}. Mode Mencuri kini siap terpicu saat dosen merespons.`,
+              `[PENGAJUAN MAHASISWA] Terdeteksi pesan pengajuan bimbingan dari ${resolvedPhone}. Mode Mencuri kini siap terpicu saat dosen merespons.`,
               'info'
             );
             dashboard.broadcast('confirmation_request_detected', lastConfirmationRequest);
-            console.log(`[PENGAJUAN] Terdeteksi dari ${resolvedPhone}${detectedDay ? ` (hari: ${detectedDay})` : ''}`);
+            console.log(`[PENGAJUAN] Terdeteksi dari ${resolvedPhone}`);
           }
         }
 
@@ -306,11 +304,9 @@ async function startBot() {
           const elapsedMinutes = (tReceived - lastTriggerTime) / (1000 * 60);
 
           let hasPrecedingConfirmation = false;
-          let promptTargetDay = null;
           if (lastConfirmationRequest) {
             if (Date.now() - lastConfirmationRequest.timestamp <= 24 * 60 * 60 * 1000) {
               hasPrecedingConfirmation = true;
-              promptTargetDay = lastConfirmationRequest.targetDay;
             } else {
               lastConfirmationRequest = null;
             }
@@ -324,7 +320,6 @@ async function startBot() {
               stealMode: currentConfig.stealMode,
               stealModeRequireConfirmation: currentConfig.stealModeRequireConfirmation,
               hasPrecedingConfirmation,
-              promptTargetDay,
             });
 
             if (currentConfig.stealMode && currentConfig.stealModeRequireConfirmation && !hasPrecedingConfirmation && !analysis.shouldTrigger) {

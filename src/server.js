@@ -170,7 +170,6 @@ class DashboardServer extends EventEmitter {
         stealMode: data.stealMode !== undefined ? data.stealMode : config.stealMode,
         stealModeRequireConfirmation: data.stealModeRequireConfirmation !== undefined ? data.stealModeRequireConfirmation : config.stealModeRequireConfirmation,
         hasPrecedingConfirmation: Boolean(data.hasPrecedingConfirmation),
-        promptTargetDay: data.promptTargetDay || null,
       });
       const members = (Array.isArray(config.members) && config.members.length > 0)
         ? config.members

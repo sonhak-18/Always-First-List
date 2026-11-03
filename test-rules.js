@@ -85,14 +85,24 @@ const testCases = [
     },
   },
   {
-    desc: 'Mode Mencuri + Kunci Pengajuan: Dosen chat SETELAH ADA pengajuan mahasiswa (Senin) -> MENCURI & KIRIM LIST',
+    desc: 'Mode Mencuri + Kunci Pengajuan: Dosen chat SETELAH ADA pengajuan mahasiswa -> MENCURI & KIRIM LIST (Siklus Berikutnya)',
     chat: 'Iya',
     options: {
       stealMode: true,
       stealModeRequireConfirmation: true,
       hasPrecedingConfirmation: true,
-      promptTargetDay: 'senin',
       baseDate: SIMULATED_BASE_DATE,
+      sessionDays: ['senin', 'rabu'],
+    },
+  },
+  {
+    desc: 'Mode Mencuri: Kasus nyata hari ini (Selasa 3 Nov -> Dosen respons pengajuan Rabu) -> TARGET HARUS SENIN 9 NOV (Siklus Berikutnya)',
+    chat: 'Belum bisa. Di jam yg sama ada monev eksternal dr Bestari.',
+    options: {
+      stealMode: true,
+      stealModeRequireConfirmation: true,
+      hasPrecedingConfirmation: true,
+      baseDate: dayjs('2026-11-03T16:22:00.000Z'),
       sessionDays: ['senin', 'rabu'],
     },
   },
