@@ -22,10 +22,63 @@ const MEMBERS = (process.env.LISTING_MEMBERS || 'Nama 1, Nama 2, Nama 3')
 
 let lastTriggerTime = 0;
 let lastConfirmationRequest = null;
+let currentSock = null;
+let isReconnecting = false;
+let lastHeartbeatTick = Date.now();
+const DEFAULT_WA_VERSION = [2, 3000, 1015901307];
+
 const dashboard = new DashboardServer(PORT, HOST);
 const authPath = path.resolve(__dirname, '../auth_info_baileys');
 const groupParticipantMap = new Map();
 const groupMetadataCache = new Map();
+
+// Sleep/Wake watchdog: deteksi lonjakan waktu akibat PC sleep atau hibernate
+setInterval(() => {
+  const now = Date.now();
+  const delta = now - lastHeartbeatTick;
+  lastHeartbeatTick = now;
+
+  if (delta > 6000) {
+    dashboard.addSystemLog(`[WAKE] Terdeteksi PC baru bangun dari sleep (jeda: ${Math.round(delta / 1000)} detik). Menyegarkan koneksi WhatsApp...`, 'warn');
+    console.log(`\n[WAKE] Terdeteksi PC bangun dari sleep (jeda: ${Math.round(delta / 1000)}s). Merestart koneksi WhatsApp...`);
+    triggerReconnect(1500);
+  }
+}, 2000);
+
+function triggerReconnect(delayMs = 2500) {
+  if (isReconnecting) return;
+  isReconnecting = true;
+  dashboard.updateState({ connected: false });
+
+  if (currentSock) {
+    try {
+      currentSock.ev.removeAllListeners();
+      currentSock.ws?.close();
+      currentSock.end(new Error('Reconnecting after network or sleep event'));
+    } catch (e) {}
+    currentSock = null;
+  }
+
+  setTimeout(() => {
+    isReconnecting = false;
+    startBot().catch(err => {
+      console.error('[RECONNECT ERROR]', err);
+      triggerReconnect(3000);
+    });
+  }, delayMs);
+}
+
+async function resolveBaileysVersion() {
+  try {
+    const fetchPromise = fetchLatestBaileysVersion();
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('version fetch timeout')), 2500));
+    const result = await Promise.race([fetchPromise, timeoutPromise]);
+    if (result && Array.isArray(result.version)) {
+      return result.version;
+    }
+  } catch (err) {}
+  return DEFAULT_WA_VERSION;
+}
 let precomputedListing = null;
 
 function refreshPrecomputedListing() {
@@ -139,7 +192,16 @@ async function startBot() {
   });
 
   const { state, saveCreds } = await useMultiFileAuthState(authPath);
-  const { version } = await fetchLatestBaileysVersion();
+  const version = await resolveBaileysVersion();
+
+  if (currentSock) {
+    try {
+      currentSock.ev.removeAllListeners();
+      currentSock.ws?.close();
+      currentSock.end();
+    } catch (e) {}
+    currentSock = null;
+  }
 
   const sock = makeWASocket({
     version,
@@ -152,10 +214,14 @@ async function startBot() {
     generateHighQualityLinkPreview: false,
     markOnlineOnConnect: true,
     keepAliveIntervalMs: 10000,
+    connectTimeoutMs: 15000,
+    defaultQueryTimeoutMs: 15000,
     retryRequestDelayMs: 150,
     emitOwnEvents: false,
     cachedGroupMetadata: async (jid) => groupMetadataCache.get(jid),
   });
+
+  currentSock = sock;
 
   sock.ev.on('creds.update', saveCreds);
 
@@ -181,28 +247,19 @@ async function startBot() {
           fs.rmSync(authPath, { recursive: true, force: true });
         } catch (err) {}
         console.log('[KONEKSI] Menyiapkan QR Code baru dalam 2 detik...\n');
-        setTimeout(startBot, 2000);
+        triggerReconnect(2000);
       } else {
-        dashboard.addSystemLog(`Koneksi terputus (Status: ${statusCode || 'unknown'}). Reconnecting dalam 3 detik...`, 'warn');
-        console.log(`[KONEKSI] Terputus (Status: ${statusCode}). Reconnecting dalam 3 detik...`);
-        setTimeout(startBot, 3000);
+        dashboard.addSystemLog(`Koneksi terputus (Status: ${statusCode || 'unknown'}). Reconnecting...`, 'warn');
+        console.log(`[KONEKSI] Terputus (Status: ${statusCode}). Reconnecting...`);
+        triggerReconnect(3000);
       }
     } else if (connection === 'open') {
       dashboard.updateState({ qr: false, connected: true });
       dashboard.addSystemLog('Bot WhatsApp berhasil terhubung.', 'success');
       console.log('\n[KONEKSI] Bot WhatsApp Terhubung.');
 
+      // Prioritas 1: Ambil metadata grup sumber dan target terlebih dahulu agar bot langsung aktif
       try {
-        const groups = await sock.groupFetchAllParticipating();
-        const groupList = Object.values(groups).map(g => ({ id: g.id, name: g.subject }));
-        dashboard.updateState({ groups: groupList });
-        dashboard.addSystemLog(`Ditemukan ${groupList.length} grup WhatsApp. Cache bimbingan aktif.`, 'info');
-
-        console.log(`[INFO] Ditemukan ${groupList.length} grup WhatsApp:`);
-        groupList.forEach((grp, idx) => {
-          console.log(`${idx + 1}. ${grp.name} -> ${grp.id}`);
-        });
-
         if (SOURCE_GROUP_JID) {
           await updateGroupCache(sock, SOURCE_GROUP_JID);
         }
@@ -211,6 +268,16 @@ async function startBot() {
         }
         refreshPrecomputedListing();
       } catch (err) {}
+
+      // Prioritas 2: Muat seluruh daftar grup di latar belakang tanpa menghambat kesiapan bot
+      setTimeout(async () => {
+        try {
+          const groups = await sock.groupFetchAllParticipating();
+          const groupList = Object.values(groups).map(g => ({ id: g.id, name: g.subject }));
+          dashboard.updateState({ groups: groupList });
+          dashboard.addSystemLog(`Cache aktif untuk ${groupList.length} grup WhatsApp.`, 'info');
+        } catch (err) {}
+      }, 1000);
     }
   });
 
